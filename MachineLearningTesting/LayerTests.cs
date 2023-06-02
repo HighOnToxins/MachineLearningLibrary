@@ -4,9 +4,9 @@ using System.Data.Common;
 
 namespace MachineLearningTesting;
 
-public class LayerTests
+internal class LayerTests
 {
-    internal class TestLayer: ILayer
+    private class TestLayer: ILayer
     {
         private float weight;
 

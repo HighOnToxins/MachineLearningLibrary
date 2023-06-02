@@ -1,4 +1,5 @@
 ﻿using MachineLearningLibrary.Layers;
+using System;
 
 namespace MachineLearningLibrary;
 
@@ -32,6 +33,17 @@ public sealed class Agent
     public int InputSize { get => layers[0].InputSize; }
 
     public int OutputSize { get => layers[^0].OutputSize; }
+
+    public void AddValueAt(int index, float value)
+    {
+        int i;
+        for(i = 0; index < 0 || layers[i].VariableLength < index; i++)
+        {
+            i -= layers[i].VariableLength;
+        }
+
+        layers[i].AddValueAt(index, value);
+    }
 
     public IReadOnlyList<float> Run(IReadOnlyList<float> data)
     {
@@ -67,4 +79,5 @@ public sealed class Agent
     {
         throw new NotImplementedException();
     }
+
 }
