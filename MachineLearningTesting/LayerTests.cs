@@ -21,16 +21,9 @@ internal class LayerTests
 
         public int OutputSize => 2;
 
-        public void AddValueAt(int index, float value)
+        public void AddGradient(float[] gradient)
         {
-            if(index == 0)
-            {
-                weight += value;
-            }
-            else
-            {
-                throw new IndexOutOfRangeException();
-            }
+            weight += gradient[0];
         }
 
         public IReadOnlyList<float> ForwardPass(IReadOnlyList<float> data)
@@ -51,6 +44,7 @@ internal class LayerTests
 
             data = ForwardPass(data);
         }
+
     }
 
     [Test]

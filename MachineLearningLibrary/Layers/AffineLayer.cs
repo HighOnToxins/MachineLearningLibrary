@@ -1,4 +1,7 @@
 ﻿
+using System;
+using System.Reflection;
+
 namespace MachineLearningLibrary.Layers;
 
 public sealed class AffineLayer: ILayer
@@ -56,22 +59,19 @@ public sealed class AffineLayer: ILayer
 
     public int OutputSize { get => matrix.Length; }
 
-    public void AddValueAt(int index, float value)
+    public void AddGradient(float[] gradient)
     {
-        if(0 < index && index < InputSize * OutputSize)
+        for(int outI = 0; outI < OutputSize; outI++)
         {
-            int outputIndex = index / OutputSize;
-            int inputIndex = index % OutputSize;
-            matrix[outputIndex][inputIndex] = value;
+            for(int inI = 0; inI < InputSize; inI++)
+            {
+                matrix[outI][inI] += gradient[outI*OutputSize + inI];
+            }
         }
-        else if(index < (InputSize+1) * OutputSize)
+
+        for(int outI = 0; outI < OutputSize; outI++)
         {
-            int outputIndex = index - InputSize * OutputSize;
-            bias[outputIndex] = value;
-        }
-        else
-        {
-            throw new IndexOutOfRangeException();
+            bias[outI] += gradient[OutputSize * InputSize + outI];
         }
     }
 

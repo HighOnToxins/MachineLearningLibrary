@@ -30,20 +30,19 @@ public sealed class Agent
         return sum;
     }
 
+    internal void AddGradient(float[] gradient)
+    {
+        int startIndex = 0;
+        for(int i = 0; i < layers.Count; i++)
+        {
+            layers[i].AddGradient(gradient[startIndex..(startIndex + layers[i].VariableLength - 1)]);
+            startIndex += layers[i].VariableLength;
+        }
+    }
+
     public int InputSize { get => layers[0].InputSize; }
 
     public int OutputSize { get => layers[^0].OutputSize; }
-
-    public void AddValueAt(int index, float value)
-    {
-        int i;
-        for(i = 0; index < 0 || layers[i].VariableLength < index; i++)
-        {
-            i -= layers[i].VariableLength;
-        }
-
-        layers[i].AddValueAt(index, value);
-    }
 
     public IReadOnlyList<float> Run(IReadOnlyList<float> data)
     {

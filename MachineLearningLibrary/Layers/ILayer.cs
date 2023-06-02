@@ -8,12 +8,12 @@ public interface ILayer
 
     public int OutputSize { get; }
 
+    public void AddGradient(float[] floats);
+
     public IReadOnlyList<float> ForwardPass(IReadOnlyList<float> data);
 
     //Computes the gradient based on the data, and the gradient of that data.
     public void ComputeGradient(int index, ref IReadOnlyList<float> gradient, ref IReadOnlyList<float> data);
-
-    public void AddValueAt(int index, float value);
 
 }
 
