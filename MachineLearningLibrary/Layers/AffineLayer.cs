@@ -1,7 +1,7 @@
 ﻿
 namespace MachineLearningLibrary.Layers;
 
-public sealed class AffineLayer: Layer
+public sealed class AffineLayer: ILayer
 {
     private readonly float[][] matrix; //out * in
     private readonly float[] bias;
@@ -48,15 +48,15 @@ public sealed class AffineLayer: Layer
         }
     }
 
-    public override int VariableLength { 
+    public int VariableLength { 
         get => InputSize * OutputSize + bias.Length;
     }
 
-    public override int InputSize { get => matrix[0].Length; }
+    public int InputSize { get => matrix[0].Length; }
 
-    public override int OutputSize { get => matrix.Length; }
+    public int OutputSize { get => matrix.Length; }
 
-    internal override void AddValueAt(int index, float value)
+    public void AddValueAt(int index, float value)
     {
         if(0 < index && index < InputSize * OutputSize)
         {
@@ -75,7 +75,7 @@ public sealed class AffineLayer: Layer
         }
     }
 
-    internal override IReadOnlyList<float> ForwardPass(IReadOnlyList<float> data)
+    public IReadOnlyList<float> ForwardPass(IReadOnlyList<float> data)
     {
         float[] result = new float[OutputSize];
 
@@ -90,11 +90,16 @@ public sealed class AffineLayer: Layer
         }
 
         return result;
+
+        // - - - CAN BE REPLACED BY THIS, but is very slow unless the ComputeGradient function is optimized - - - 
+        //IReadOnlyList<float> emptyGradient = Array.Empty<float>();
+        //ComputeGradient(-1, ref emptyGradient, ref data);
+        //return data;
     }
 
     //TODO: find a way to optimize compute gradient from gradient, such as to not compute values where gradient are zero.
     //TODO: check if the out gradient overrides the gradient while the function is on-going if they are the same array.
-    internal override void ComputeGradient(int index, ref IReadOnlyList<float> gradient, ref IReadOnlyList<float> data)
+    public void ComputeGradient(int index, ref IReadOnlyList<float> gradient, ref IReadOnlyList<float> data)
     {
         float[] gradientResult = new float[OutputSize];
         float[] dataResult = new float[OutputSize];
@@ -111,22 +116,21 @@ public sealed class AffineLayer: Layer
             for(int inI = 0; inI < InputSize; inI++)
             {
                 dataResult[outI] += matrix[outI][inI] * data[inI];
-
-                int differentiatedMatrixOI = matrixFlag && inI == inputIndex && outI == outputIndex ? 1 : 0;
-                gradientResult[outI] += matrix[outI][inI] * gradient[inI] + differentiatedMatrixOI * data[inI];
+                gradientResult[outI] += matrix[outI][inI] * gradient[inI];
             }
 
             dataResult[outI] += bias[outI];
 
-            gradientResult[outI] = dataResult[outI] <= 0 ? 0 : gradientResult[outI]; 
-            
-            //if dataResult[outI] == 0, then we might have a problem, quick check.
-            if(dataResult[outI] == 0) throw new ArgumentException($"dataResult[{outI}] = 0");
-
+            float differentiatedMatrixOI = matrixFlag && outI == outputIndex ? 1 : 0;
             int differentiatedBias = biasFlag && outI == bOutputIndex ? 1 : 0;
-            gradientResult[outI] += differentiatedBias;
+            gradientResult[outI] += differentiatedMatrixOI*data[inputIndex] + differentiatedBias;
+
+            gradientResult[outI] = dataResult[outI] < 0 ? 0 : gradientResult[outI]; 
 
             dataResult[outI] = Math.Max(0, dataResult[outI]);
+
+            //if dataResult[outI] == 0, then we might have a problem, quick check.
+            if(dataResult[outI] == 0) throw new ArgumentException($"dataResult[{outI}] = 0");
         }
 
         gradient = gradientResult;

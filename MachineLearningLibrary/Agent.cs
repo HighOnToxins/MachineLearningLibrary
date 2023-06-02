@@ -4,9 +4,9 @@ namespace MachineLearningLibrary;
 
 public sealed class Agent
 {
-    private readonly IReadOnlyList<Layer> layers;
+    private readonly IReadOnlyList<ILayer> layers;
 
-    public Agent(params Layer[] layers) {
+    public Agent(params ILayer[] layers) {
         this.layers = layers;
     }
 
