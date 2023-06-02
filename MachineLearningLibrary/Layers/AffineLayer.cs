@@ -32,19 +32,19 @@ public sealed class AffineLayer: ILayer
     public AffineLayer(float[,] weights)
     {
         matrix = new float[weights.GetLength(0)][];
-        for(int i = 0; i < OutputSize; i++)
+        for(int outI = 0; outI < OutputSize; outI++)
         {
-            matrix[i] = new float[weights.GetLength(1) - 1];
-            for(int j = 0; j < InputSize; j++)
+            matrix[outI] = new float[weights.GetLength(1) - 1];
+            for(int inI = 0; inI < InputSize; inI++)
             {
-                matrix[i][j] = weights[i, j];
+                matrix[outI][inI] = weights[outI, inI];
             }
         }
 
-        bias = new float[weights.GetLength(1)];
+        bias = new float[OutputSize];
         for(int i = 0; i < OutputSize; i++)
         {
-            bias[i] = weights[i, weights.GetLength(0) - 1];
+            bias[i] = weights[i, InputSize];
         }
     }
 
@@ -77,6 +77,11 @@ public sealed class AffineLayer: ILayer
 
     public IReadOnlyList<float> ForwardPass(IReadOnlyList<float> data)
     {
+        if(data.Count != InputSize)
+        {
+            throw new ArgumentException();
+        }
+
         float[] result = new float[OutputSize];
 
         for(int outI = 0; outI < OutputSize; outI++)
@@ -101,6 +106,11 @@ public sealed class AffineLayer: ILayer
     //TODO: check if the out gradient overrides the gradient while the function is on-going if they are the same array.
     public void ComputeGradient(int index, ref IReadOnlyList<float> gradient, ref IReadOnlyList<float> data)
     {
+        if(gradient.Count != InputSize && data.Count != InputSize)
+        {
+            throw new ArgumentException();
+        }
+
         float[] gradientResult = new float[OutputSize];
         float[] dataResult = new float[OutputSize];
 
@@ -121,9 +131,9 @@ public sealed class AffineLayer: ILayer
 
             dataResult[outI] += bias[outI];
 
-            float differentiatedMatrixOI = matrixFlag && outI == outputIndex ? 1 : 0;
+            float differentiatedMatrixOIPart = matrixFlag && outI == outputIndex ? data[inputIndex] : 0;
             int differentiatedBias = biasFlag && outI == bOutputIndex ? 1 : 0;
-            gradientResult[outI] += differentiatedMatrixOI*data[inputIndex] + differentiatedBias;
+            gradientResult[outI] += differentiatedMatrixOIPart + differentiatedBias;
 
             gradientResult[outI] = dataResult[outI] < 0 ? 0 : gradientResult[outI]; 
 
