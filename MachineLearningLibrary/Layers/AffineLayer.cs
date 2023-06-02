@@ -103,7 +103,6 @@ public sealed class AffineLayer: ILayer
     }
 
     //TODO: find a way to optimize compute gradient from gradient, such as to not compute values where gradient are zero.
-    //TODO: check if the out gradient overrides the gradient while the function is on-going if they are the same array.
     public void ComputeGradient(int index, ref IReadOnlyList<float> gradient, ref IReadOnlyList<float> data)
     {
         if(gradient.Count != InputSize && data.Count != InputSize)
