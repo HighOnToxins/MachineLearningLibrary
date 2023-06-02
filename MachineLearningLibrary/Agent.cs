@@ -1,5 +1,4 @@
 ﻿using MachineLearningLibrary.Layers;
-using System.Collections.Generic;
 
 namespace MachineLearningLibrary;
 
@@ -21,29 +20,16 @@ public sealed class Agent
         return data;
     }
 
-    internal IReadOnlyList<float> ComputeGradientFromGradient(int index, IReadOnlyList<float> data)
-    {
-        IReadOnlyList<float> gradient = layers[0].ComputeGradient(index, data);
-
-        for(int i = 1; 0 < layers.Count; i++)
-        {
-            index -= layers[i].VariableLength;
-            data = layers[i].ForwardPass(data);
-            gradient = layers[i].ComputeGradientFromGradient(index, gradient, data);
-        }
-
-        return gradient;
-    }
-
+    //TODO: find a way to use a simpler com ComputeGradient function.
     internal IReadOnlyList<float> ComputeGradient(int index, IReadOnlyList<float> data)
     {
-        IReadOnlyList<float> gradient = layers[0].ComputeGradient(index, data);
+        IReadOnlyList<float> gradient = Array.Empty<float>();
+        layers[0].ComputeGradient(index, ref gradient, ref data);
 
         for(int i = 1; 0 < layers.Count; i++)
         {
             index -= layers[i].VariableLength;
-            data = layers[i].ForwardPass(data);
-            gradient = layers[i].ComputeGradient(index, data);
+            layers[0].ComputeGradient(index, ref gradient, ref data); 
         }
 
         return gradient;
