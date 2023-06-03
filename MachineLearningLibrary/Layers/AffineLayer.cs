@@ -7,7 +7,7 @@ namespace MachineLearningLibrary.Layers;
 public sealed class AffineLayer: ILayer
 {
     private readonly float[][] matrix; //out * in
-    private readonly float[] bias;
+    private readonly float[] bias; //out
 
     //TODO: add the ability to add your own activation function / activation derivative.
 
@@ -71,7 +71,7 @@ public sealed class AffineLayer: ILayer
 
         for(int outI = 0; outI < OutputSize; outI++)
         {
-            bias[outI] += gradient[OutputSize * InputSize + outI];
+            bias[outI] += gradient[OutputSize * InputSize - 1 + outI];
         }
     }
 
@@ -113,7 +113,7 @@ public sealed class AffineLayer: ILayer
         float[] gradientResult = new float[OutputSize];
         float[] dataResult = new float[OutputSize];
 
-        bool matrixFlag = 0 < index && index < InputSize * OutputSize;
+        bool matrixFlag = 0 <= index && index < InputSize * OutputSize;
         int outputIndex = index / OutputSize;
         int inputIndex = index % OutputSize;
 

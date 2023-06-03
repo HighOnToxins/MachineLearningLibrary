@@ -27,34 +27,40 @@ public sealed class Trainer
         batchSize = 0 <= batchSize && batchSize < trainingData.Count ? batchSize : trainingData.Count;
         List<IReadOnlyList<float>> tempTrainingData = trainingData.ToList();
 
-        float gradientLengthSquared = 0;
-        float[] gradient = new float[agent.VariableLength()];
+        float[] averageGradient = new float[agent.VariableLength()];
 
         for(int b = 0; b < batchSize; b++)
         {
-            int randomIndex = random.Next(trainingData.Count - 1);
+            int randomIndex = random.Next(tempTrainingData.Count);
 
             //TODO: Compute gradients multi-threaded.
-            for(int agentIndex = 0; agentIndex < gradient.Length; agentIndex++)
+            for(int agentIndex = 0; agentIndex < averageGradient.Length; agentIndex++)
             {
                 IReadOnlyList<float> data = tempTrainingData[randomIndex];
                 IReadOnlyList<float> agentGradient = agent.ComputeGradient(agentIndex, ref data);
                 float lossGradient = lossFunction.InvokeDerivative(agentGradient, data);
-                gradient[agentIndex] += lossGradient; 
-                gradientLengthSquared += lossGradient*lossGradient;
+                averageGradient[agentIndex] += (lossGradient - averageGradient[agentIndex]) / (b + 1); 
             }
 
             tempTrainingData.RemoveAt(randomIndex);
         }
 
-        float gradientLength = (float)Math.Sqrt(gradientLengthSquared);
-
-        for(int agentIndex = 0; agentIndex < gradient.Length; agentIndex++)
+        //Compute gradient length squared.
+        float gradientLengthSquared = 0;
+        for(int agentIndex = 0; agentIndex < averageGradient.Length; agentIndex++)
         {
-            gradient[agentIndex] *= gradientFactor/gradientLength;
+            gradientLengthSquared += averageGradient[agentIndex]*averageGradient[agentIndex];
         }
 
-        agent.AddGradient(gradient);
+        float gradientLength = (float)Math.Sqrt(gradientLengthSquared);
+
+        //Set the length of the gradient.
+        for(int agentIndex = 0; agentIndex < averageGradient.Length; agentIndex++)
+        {
+            averageGradient[agentIndex] *= gradientFactor/gradientLength;
+        }
+
+        agent.AddGradient(averageGradient);
         return gradientLength;
     }
 
@@ -66,19 +72,19 @@ public sealed class Trainer
         batchSize = 0 <= batchSize && batchSize < testingData.Count ? batchSize : testingData.Count;
         List<IReadOnlyList<float>> tempTestingData = testingData.ToList();
 
-        float average = 0;
+        float averageLoss = 0;
         for(int b = 0; b < batchSize; b++)
         {
-            int randomIndex = random.Next(tempTestingData.Count - 1);
+            int randomIndex = random.Next(tempTestingData.Count);
 
-            IReadOnlyList<float> prediction = agent.Run(testingData[randomIndex]);
+            IReadOnlyList<float> prediction = agent.Run(tempTestingData[randomIndex]);
             float loss = lossFunction.Invoke(prediction);
 
-            average += (loss - average) / (b + 1); 
+            averageLoss += (loss - averageLoss) / (b + 1); 
             tempTestingData.RemoveAt(randomIndex);
         }
 
-        return average;
+        return averageLoss;
     }
 
 }
