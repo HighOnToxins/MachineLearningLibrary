@@ -170,7 +170,7 @@ internal class LayerTests
 
         Agent agent = new(layers);
 
-        float[] data = new float[]
+        IReadOnlyList<float> data = new float[]
         {
             1, 2
         };
@@ -180,7 +180,7 @@ internal class LayerTests
             108, 132
         };
 
-        IReadOnlyList<float> result = agent.ComputeGradient(7, data);
+        IReadOnlyList<float> result = agent.ComputeGradient(7, ref data);
 
         Assert.That(result, Has.Count.EqualTo(expected.Length));
         for(int i = 0; i < result.Count; i++)

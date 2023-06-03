@@ -3,6 +3,7 @@ using System;
 
 namespace MachineLearningLibrary;
 
+//TODO: Make agent an IDerivedFunc.
 public sealed class Agent
 {
     private readonly IReadOnlyList<ILayer> layers;
@@ -55,7 +56,7 @@ public sealed class Agent
     }
 
     //TODO: find a way to use a simpler com ComputeGradient function.
-    public IReadOnlyList<float> ComputeGradient(int index, IReadOnlyList<float> data)
+    public IReadOnlyList<float> ComputeGradient(int index, ref IReadOnlyList<float> data)
     {
         IReadOnlyList<float> gradient = new float[InputSize];
         layers[0].ComputeGradient(index, ref gradient, ref data);
