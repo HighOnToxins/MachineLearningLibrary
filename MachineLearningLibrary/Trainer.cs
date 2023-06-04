@@ -27,7 +27,7 @@ public sealed class Trainer
 
     //TODO: Try running everything with checked on, making sure that no overflows happen.
     //Returns the gradient length.
-    public float Train(AgentComposite agent, float gradientFactor, int batchSize = -1, TrainOption option = TrainOption.Minimize)
+    public float Train(IAgent agent, float gradientFactor, int batchSize = -1, TrainOption option = TrainOption.Minimize)
     {
         batchSize = 0 <= batchSize && batchSize < trainingData.Count ? batchSize : trainingData.Count;
         List<IReadOnlyList<float>> tempTrainingData = trainingData.ToList();
@@ -71,7 +71,7 @@ public sealed class Trainer
     }
 
     //Returns the average loss value.
-    public float Test(AgentComposite agent, int batchSize = -1)
+    public float Test(IAgent agent, int batchSize = -1)
     {
         batchSize = 0 <= batchSize && batchSize < testingData.Count ? batchSize : testingData.Count;
         List<IReadOnlyList<float>> tempTestingData = testingData.ToList();

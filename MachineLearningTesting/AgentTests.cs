@@ -1,23 +1,161 @@
-﻿
 using MachineLearningLibrary;
+using System;
+using System.Data.Common;
+using System.Globalization;
+using System.Reflection;
+using System.Reflection.Emit;
 
 namespace MachineLearningTesting;
 
 internal class AgentTests
 {
-
-    public const string path = "../../../savedAgents/";
-
-    [SetUp]
-    public void CreateSavedAgentsFolder()
+    private class TestAgent: IAgent
     {
-        Directory.CreateDirectory(path);
+        private float weight;
+
+        public TestAgent(float weight)
+        {
+            this.weight = weight;
+        }
+        public int VariableCount() => 0;
+
+        public void AddAll(IReadOnlyList<float> values)
+        {
+            weight += values[0];
+        }
+
+        public void Invoke(
+            in IReadOnlyList<float> value,
+            out IReadOnlyList<float> valueResult)
+        {
+            valueResult = new float[] { value[0] + weight };
+        }
+
+        public void Invoke(
+            in IReadOnlyList<float> value, 
+            in IReadOnlyList<float>? derivative, 
+            out IReadOnlyList<float> valueResult, 
+            out IReadOnlyList<float> derivativeResult, 
+            int varIndex = -1)
+        {
+            valueResult = new float[] { value[0] + weight };
+
+            if(varIndex == 0)
+            {
+                derivativeResult = new float[] { value[0] };
+            }
+            else
+            {
+                derivativeResult = new float[] { 0f };
+            }
+        }
+
+        public void WriteToFile(BinaryWriter binWriter)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     [Test]
-    public void AgentIsSavedAndReadProperly()
+    public void TestLayerComputesDataCorrectly()
     {
+        TestAgent agent = new(2);
 
+        float[] data = new float[]
+        {
+            1
+        };
+
+        float[] expected = new float[]
+        {
+            3
+        };
+
+        agent.Invoke(data, out IReadOnlyList<float> result);
+
+        Assert.That(result, Has.Count.EqualTo(expected.Length));
+        for(int i = 0; i < result.Count; i++)
+        {
+            Assert.That(result, Has.ItemAt(i).EqualTo(expected[i]));
+        }
+
+        Assert.Pass();
+    }
+
+    [Test]
+    public void AffineLayerComputesDataCorrectly()
+    {
+        float[][,] weights = new float[][,]{
+            new float[,]{ 
+                {1f, 2f, 1f}, 
+                {3f, 4f, 1f},
+            },
+            new float[,]{
+                {5f, 6f, 1f},
+                {7f, 8f, 1f},
+            },
+            new float[,]{
+                {9f, 10f, 1f},
+                {11f, 12f, 1f},
+            },
+        };
+
+        AffineAgent[] layers = new AffineAgent[weights.Length];
+        for(int i = 0; i < weights.Length; i++)
+        {
+            layers[i] = new AffineAgent(weights[i]);
+        }
+
+        IAgent agent = new AgentComposite(layers);
+
+        float[] data = new float[]
+        {
+            1, 2
+        };
+
+        float[] expected = new float[]
+        {
+            2318, 2802
+        };
+
+        agent.Invoke(data, out IReadOnlyList<float> result);
+
+        Assert.That(result, Has.Count.EqualTo(expected.Length));
+        for(int i = 0; i < result.Count; i++)
+        {
+            Assert.That(result, Has.ItemAt(i).EqualTo(expected[i]));
+        }
+    }
+
+    [Test]
+    public void AffineLayerDoesNotComupteDataOfWrongSize()
+    {
+        float[][,] weights = new float[][,]{
+            new float[,]{
+                {0, 0, 0},
+                {0, 0, 0},
+            },
+        };
+
+        AffineAgent[] layers = new AffineAgent[weights.Length];
+        for(int i = 0; i < weights.Length; i++)
+        {
+            layers[i] = new AffineAgent(weights[i]);
+        }
+
+        IAgent agent = new AgentComposite(layers);
+
+        float[] data = new float[]
+        {
+            0, 0, 0, 0
+        };
+
+        Assert.Throws<ArgumentException>(() => agent.Invoke(data, out _));
+    }
+
+    [Test]
+    public void AffineLayerComputesGradientCorrectly()
+    {
         float[][,] weights = new float[][,]{
             new float[,]{
                 {1f, 2f, 1f},
@@ -39,31 +177,24 @@ internal class AgentTests
             layers[i] = new AffineAgent(weights[i]);
         }
 
-        AgentComposite agent = new(layers);
+        IAgent agent = new AgentComposite(layers);
 
-        string filename = "testSave.bin";
-
-        agent.SaveToFile(path + filename);
-        AgentComposite loadedAgent = AgentComposite.LoadFromFile(path + filename);
-
-        Assert.That(agent.VariableCount(), Is.EqualTo(loadedAgent.VariableCount()));
-
-        for(int i = -10; i < 10; i++)
+        IReadOnlyList<float> data = new float[]
         {
-            for(int j = -10; j < 10; j++)
-            {
+            1, 2
+        };
 
-                IReadOnlyList<float> data = new float[] { 
-                    i, j
-                };
+        float[] expected = new float[]
+        {
+            108, 132
+        };
 
-                agent.Invoke(data, out IReadOnlyList<float> result);
-                loadedAgent.Invoke(data, out IReadOnlyList<float> result2);
+        agent.Invoke(data, default, out _, out IReadOnlyList<float> result, 7);
 
-                Assert.That(result, Is.EquivalentTo(result2));
-
-            }
+        Assert.That(result, Has.Count.EqualTo(expected.Length));
+        for(int i = 0; i < result.Count; i++)
+        {
+            Assert.That(result, Has.ItemAt(i).EqualTo(expected[i]));
         }
-
     }
 }
