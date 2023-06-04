@@ -53,6 +53,11 @@ internal class LayerTests
                 valueResult = new float[] { 0f };
             }
         }
+
+        public void WriteToFile(BinaryWriter binWriter)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     [Test]

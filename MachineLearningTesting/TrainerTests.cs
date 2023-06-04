@@ -1,6 +1,5 @@
 ﻿
 using MachineLearningLibrary;
-using MachineLearningLibrary.Layers;
 
 namespace MachineLearningTesting;
 

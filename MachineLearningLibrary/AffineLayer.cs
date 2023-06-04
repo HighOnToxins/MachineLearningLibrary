@@ -1,4 +1,6 @@
-﻿namespace MachineLearningLibrary;
+﻿using System.Formats.Asn1;
+
+namespace MachineLearningLibrary;
 
 public sealed class AffineLayer : ILayer
 {
@@ -166,4 +168,48 @@ public sealed class AffineLayer : ILayer
         return result;
     }
 
+    public void WriteToFile(BinaryWriter binWriter)
+    {
+        binWriter.Write(OutputSize);
+        binWriter.Write(InputSize);
+
+        for(int outI = 0; outI < OutputSize; outI++)
+        {
+            for(int inI = 0; inI < InputSize; inI++)
+            {
+                binWriter.Write(matrix[outI][inI]);
+            }
+        }
+
+        for(int outI = 0; outI < OutputSize; outI++)
+        {
+            binWriter.Write(bias[outI]);
+        }
+    }
+
+    internal static ILayer ReadFromFile(BinaryReader binReader)
+    {
+        int outputSize = binReader.ReadInt32();
+        int inputSize = binReader.ReadInt32();
+
+        float[][] matrix = new float[outputSize][];
+
+        for(int outI = 0; outI < outputSize; outI++)
+        {
+            matrix[outI] = new float[inputSize];
+            for(int inI = 0; inI < inputSize; inI++)
+            {
+                matrix[outI][inI] = binReader.ReadSingle();
+            }
+        }
+
+        float[] bias = new float[outputSize];
+
+        for(int outI = 0; outI < outputSize; outI++)
+        {
+            bias[outI] = (float)binReader.ReadSingle();
+        }
+
+        return new AffineLayer(matrix, bias);
+    }
 }

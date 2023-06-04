@@ -1,4 +1,6 @@
-﻿namespace MachineLearningLibrary;
+﻿using System.Formats.Asn1;
+
+namespace MachineLearningLibrary;
 
 public sealed class Agent: ILayer
 {
@@ -69,12 +71,53 @@ public sealed class Agent: ILayer
 
     public void SaveToFile(string path)
     {
-        throw new NotImplementedException();
+        using BinaryWriter binWriter = new(File.Create(path));
+        WriteToFile(binWriter);
+    }
+
+    public void WriteToFile(BinaryWriter binWriter)
+    {
+        binWriter.Write(layers.Count);
+
+        for(int i = 0; i < layers.Count; i++)
+        {
+            switch(layers[i])
+            {
+                case Agent: binWriter.Write(0); break;
+                case AffineLayer: binWriter.Write(1); break;
+                default:  throw new IOException();
+            }
+
+            layers[i].WriteToFile(binWriter);
+        }
     }
 
     public static Agent LoadFromFile(string path)
     {
-        throw new NotImplementedException();
+        using BinaryReader binReader = new(File.OpenRead(path));
+        return ReadFromFile(binReader);
+    }
+
+    public static Agent ReadFromFile(BinaryReader binReader)
+    {
+        int layerCount = binReader.ReadInt32();
+        ILayer[] layers = new ILayer[layerCount];
+
+        for(int i = 0; i < layerCount; i++)
+        {
+            int layerType = binReader.ReadInt32();
+
+            //TODO: Change to use reflection instead of swtich, for determining layer-type.
+            ILayer layer = layerType switch
+            {
+                0 => ReadFromFile(binReader),
+                1 => AffineLayer.ReadFromFile(binReader),
+                _ => throw new IOException(),
+            };
+            layers[i] = layer;
+        }
+
+        return new Agent(layers);
     }
 
 }
