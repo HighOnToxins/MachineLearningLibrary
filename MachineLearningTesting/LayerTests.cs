@@ -1,6 +1,9 @@
 using MachineLearningLibrary;
 using MachineLearningLibrary.Layers;
+using System;
 using System.Data.Common;
+using System.Reflection;
+using System.Reflection.Emit;
 
 namespace MachineLearningTesting;
 
@@ -14,37 +17,43 @@ internal class LayerTests
         {
             this.weight = weight;
         }
+        public int VariableCount() => 0;
 
-        public int VariableLength => 0;
-
-        public int InputSize => 2;
-
-        public int OutputSize => 2;
-
-        public void AddGradient(float[] gradient)
+        public void AddAll(IReadOnlyList<float> values)
         {
-            weight += gradient[0];
+            weight += values[0];
         }
 
-        public IReadOnlyList<float> ForwardPass(IReadOnlyList<float> data)
+        public void Invoke(
+            in IReadOnlyList<float> value, 
+            in IReadOnlyList<float>? gradient, 
+            out IReadOnlyList<float> valueResult, 
+            out IReadOnlyList<float> derivativeResult, 
+            ComputeOptions options = ComputeOptions.ValueAndDerivative, 
+            int varIndex = -1)
         {
-            return new float[] { data[0] + weight };
-        }
+            valueResult = Array.Empty<float>();
+            derivativeResult = Array.Empty<float>();
 
-        public void ComputeGradient(int index, ref IReadOnlyList<float> gradient, ref IReadOnlyList<float> data)
-        {
-            if(index == 0)
+            if(options.HasFlag(ComputeOptions.Value))
             {
-                gradient = new float[] { data[0] };
+                valueResult = new float[] { value[0] + weight };
+            }
+
+            if(!options.HasFlag(ComputeOptions.Derivative))
+            {
+                return;
+            }
+
+            if(varIndex == 0)
+            {
+                valueResult = new float[] { value[0] };
             }
             else
             {
-                gradient = new float[] { 0f };
+                valueResult = new float[] { 0f };
             }
-
-            data = ForwardPass(data);
         }
-
     }
 
     [Test]
@@ -62,7 +71,12 @@ internal class LayerTests
             3
         };
 
-        IReadOnlyList<float> result = layer.ForwardPass(data);
+        layer.Invoke(
+            data,
+            default,
+            out IReadOnlyList<float> result,
+            out _,
+            ComputeOptions.Value);
 
         Assert.That(result, Has.Count.EqualTo(expected.Length));
         for(int i = 0; i < result.Count; i++)
@@ -180,7 +194,13 @@ internal class LayerTests
             108, 132
         };
 
-        IReadOnlyList<float> result = agent.ComputeGradient(7, ref data);
+        agent.Invoke(
+            data,
+            default,
+            out _,
+            out IReadOnlyList<float> result,
+            ComputeOptions.Derivative,
+            7);
 
         Assert.That(result, Has.Count.EqualTo(expected.Length));
         for(int i = 0; i < result.Count; i++)

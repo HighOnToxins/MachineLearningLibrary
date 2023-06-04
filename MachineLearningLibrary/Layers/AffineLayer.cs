@@ -1,7 +1,4 @@
 ﻿
-using System;
-using System.Reflection;
-
 namespace MachineLearningLibrary.Layers;
 
 public sealed class AffineLayer: ILayer
@@ -51,33 +48,105 @@ public sealed class AffineLayer: ILayer
         }
     }
 
-    public int VariableLength { 
-        get => InputSize * OutputSize + bias.Length;
+    public AffineLayer(float[] variables)
+    {
+        throw new NotImplementedException();
     }
+
+    public AffineLayer(int inputCount, int outputCount)
+    {
+        throw new NotImplementedException();
+    }
+
+    public AffineLayer(int inputCount, int outputCount, int rangeMin, int rangeMax)
+    {
+        throw new NotImplementedException();
+    }
+    
+    public int VariableCount() 
+        => InputSize * OutputSize + bias.Length;
 
     public int InputSize { get => matrix[0].Length; }
 
     public int OutputSize { get => matrix.Length; }
 
-    public void AddGradient(float[] gradient)
+    public void AddAll(IReadOnlyList<float> values)
     {
         for(int outI = 0; outI < OutputSize; outI++)
         {
             for(int inI = 0; inI < InputSize; inI++)
             {
-                matrix[outI][inI] += gradient[outI*OutputSize + inI];
+                matrix[outI][inI] += values[outI*OutputSize + inI];
             }
         }
 
         for(int outI = 0; outI < OutputSize; outI++)
         {
-            bias[outI] += gradient[OutputSize * InputSize - 1 + outI];
+            bias[outI] += values[OutputSize * InputSize - 1 + outI];
         }
     }
 
-    public IReadOnlyList<float> ForwardPass(IReadOnlyList<float> data)
+    public void Invoke(
+        in IReadOnlyList<float> value, 
+        in IReadOnlyList<float>? gradient, 
+        out IReadOnlyList<float> valueOut,
+        out IReadOnlyList<float> gradientOut, 
+        ComputeOptions options = ComputeOptions.ValueAndDerivative,
+        int varIndex = -1)
     {
-        if(data.Count != InputSize)
+        if(!options.HasFlag(ComputeOptions.Derivative))
+        {
+            valueOut = Invoke(value);
+            gradientOut = Array.Empty<float>();
+            return;
+        }
+
+        IReadOnlyList<float> gradientOrDefault = gradient ?? new float[InputSize];
+
+        if(value.Count != InputSize || gradientOrDefault.Count != InputSize)
+        {
+            throw new ArgumentException();
+        }
+
+        float[] gradientResult = new float[OutputSize];
+        float[] dataResult = new float[OutputSize];
+
+        bool matrixFlag = 0 <= varIndex && varIndex < InputSize * OutputSize;
+        int outputIndex = varIndex / OutputSize;
+        int inputIndex = varIndex % OutputSize;
+
+        bool biasFlag = InputSize * OutputSize < varIndex && varIndex < (InputSize + 1) * OutputSize;
+        int bOutputIndex = varIndex - InputSize * OutputSize;
+
+        for(int outI = 0; outI < OutputSize; outI++)
+        {
+            for(int inI = 0; inI < InputSize; inI++)
+            {
+                dataResult[outI] += matrix[outI][inI] * value[inI];
+                gradientResult[outI] += matrix[outI][inI] * gradientOrDefault[inI];
+            }
+
+            dataResult[outI] += bias[outI];
+
+            float differentiatedMatrixOIPart = matrixFlag && outI == outputIndex ? value[inputIndex] : 0;
+            int differentiatedBias = biasFlag && outI == bOutputIndex ? 1 : 0;
+            gradientResult[outI] += differentiatedMatrixOIPart + differentiatedBias;
+
+            dataResult[outI] = Math.Max(0, dataResult[outI]);
+            gradientResult[outI] = dataResult[outI] < 0 ? 0 : gradientResult[outI];
+
+            //if dataResult[outI] == 0, then we might have a problem, quick check.
+            if(dataResult[outI] == 0) throw new ArgumentException($"dataResult[{outI}] = 0"); //TODO: Remove dataResult == 0 test.
+        }
+
+        valueOut = dataResult;
+        gradientOut = gradientResult;
+    }
+
+
+    public IReadOnlyList<float> Invoke(IReadOnlyList<float> value)
+    {
+        if(value.Count != InputSize)
         {
             throw new ArgumentException();
         }
@@ -88,61 +157,13 @@ public sealed class AffineLayer: ILayer
         {
             for(int inI = 0; inI < InputSize; inI++)
             {
-                result[outI] += matrix[outI][inI] * data[inI];
+                result[outI] += matrix[outI][inI] * value[inI];
             }
             result[outI] += bias[outI];
             result[outI] = Math.Max(0, result[outI]);
         }
 
         return result;
-
-        // - - - CAN BE REPLACED BY THIS, but is very slow unless the ComputeGradient function is optimized - - - 
-        //IReadOnlyList<float> emptyGradient = Array.Empty<float>();
-        //ComputeGradient(-1, ref emptyGradient, ref data);
-        //return data;
     }
 
-    //TODO: find a way to optimize compute gradient from gradient, such as to not compute values where gradient are zero.
-    public void ComputeGradient(int index, ref IReadOnlyList<float> gradient, ref IReadOnlyList<float> data)
-    {
-        if(gradient.Count != InputSize && data.Count != InputSize)
-        {
-            throw new ArgumentException();
-        }
-
-        float[] gradientResult = new float[OutputSize];
-        float[] dataResult = new float[OutputSize];
-
-        bool matrixFlag = 0 <= index && index < InputSize * OutputSize;
-        int outputIndex = index / OutputSize;
-        int inputIndex = index % OutputSize;
-
-        bool biasFlag = InputSize * OutputSize < index && index < (InputSize + 1) * OutputSize;
-        int bOutputIndex = index - InputSize * OutputSize;
-
-        for(int outI = 0; outI < OutputSize; outI++)
-        {
-            for(int inI = 0; inI < InputSize; inI++)
-            {
-                dataResult[outI] += matrix[outI][inI] * data[inI];
-                gradientResult[outI] += matrix[outI][inI] * gradient[inI];
-            }
-
-            dataResult[outI] += bias[outI];
-
-            float differentiatedMatrixOIPart = matrixFlag && outI == outputIndex ? data[inputIndex] : 0;
-            int differentiatedBias = biasFlag && outI == bOutputIndex ? 1 : 0;
-            gradientResult[outI] += differentiatedMatrixOIPart + differentiatedBias;
-
-            gradientResult[outI] = dataResult[outI] < 0 ? 0 : gradientResult[outI]; 
-
-            dataResult[outI] = Math.Max(0, dataResult[outI]);
-
-            //if dataResult[outI] == 0, then we might have a problem, quick check.
-            if(dataResult[outI] == 0) throw new ArgumentException($"dataResult[{outI}] = 0");
-        }
-
-        gradient = gradientResult;
-        data = dataResult; 
-    }
 }

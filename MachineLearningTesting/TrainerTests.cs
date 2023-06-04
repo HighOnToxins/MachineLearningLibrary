@@ -7,17 +7,30 @@ namespace MachineLearningTesting;
 internal class TrainerTests
 {
 
-    private sealed class TestLossFunction: IDerivedFunc<IReadOnlyList<float>, float>
+    private sealed class TestLossFunction: IDifferentiable<IReadOnlyList<float>, float>
     {
-        public float Invoke(IReadOnlyList<float> input)
+        public void Invoke(
+            in IReadOnlyList<float> value, 
+            in IReadOnlyList<float>? gradient, 
+            out float valueResult, 
+            out float derivativeResult, 
+            ComputeOptions options = ComputeOptions.ValueAndDerivative, 
+            int varIndex = -1)
         {
-            return input[0];
+            valueResult = default;
+            derivativeResult = default;
+
+            if(options.HasFlag(ComputeOptions.Value))
+            {
+                valueResult = value[0];
+            }
+
+            if(options.HasFlag(ComputeOptions.Derivative) && gradient is not null)
+            {
+                derivativeResult = gradient[0];
+            }
         }
 
-        public float InvokeDerivative(IReadOnlyList<float> difInput, IReadOnlyList<float> input)
-        {
-            return difInput[0];
-        }
     }
 
     [Test]

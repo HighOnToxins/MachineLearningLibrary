@@ -1,27 +1,15 @@
 ﻿using MachineLearningLibrary.Layers;
-using System;
-
 namespace MachineLearningLibrary;
 
-//TODO: Make agent an IDerivedFunc.
-public sealed class Agent
+public sealed class Agent: ILayer
 {
     private readonly IReadOnlyList<ILayer> layers;
 
     public Agent(params ILayer[] layers) {
         this.layers = layers;
-
-        //Check if the inputs and output sizes match.
-        for(int i = 1; i < layers.Length; i++)
-        {
-            if(layers[i-1].OutputSize != layers[i].InputSize)
-            {
-                throw new ArgumentException();
-            }
-        }
     }
 
-    public int VariableLength()
+    public int VariableCount() //Chache variable count when calculated.
     {
         int sum = 0;
         for(int i = 0; i < layers.Count; i++)
@@ -31,43 +19,53 @@ public sealed class Agent
         return sum;
     }
 
-    internal void AddGradient(float[] gradient)
+    public void AddAll(IReadOnlyList<float> values)
     {
+        float[] vals = values.ToArray(); //TODO: Create get range method instead.
         int startIndex = 0;
         for(int i = 0; i < layers.Count; i++)
         {
-            layers[i].AddGradient(gradient[startIndex..(startIndex + layers[i].VariableLength - 1)]);
-            startIndex += layers[i].VariableLength;
+            int variableCount = layers[i].VariableCount();
+            layers[i].AddAll(vals[startIndex..(startIndex + variableCount - 1)]);
+            startIndex += variableCount;
         }
     }
 
-    public int InputSize { get => layers[0].InputSize; }
-
-    public int OutputSize { get => layers[^0].OutputSize; }
-
-    public IReadOnlyList<float> Run(IReadOnlyList<float> data)
+    public IReadOnlyList<float> Run(IReadOnlyList<float> value)
     {
         for(int i = 0; i < layers.Count; i++)
         {
-            data = layers[i].ForwardPass(data);
+            layers[i].Invoke(value, default, out value, out _, ComputeOptions.Value);
         }
 
-        return data;
+        return value;
     }
 
-    //TODO: find a way to use a simpler com ComputeGradient function.
-    public IReadOnlyList<float> ComputeGradient(int index, ref IReadOnlyList<float> data)
+    public void Invoke(
+        in IReadOnlyList<float> value, 
+        in IReadOnlyList<float>? gradient, 
+        out IReadOnlyList<float> valueResult, 
+        out IReadOnlyList<float> derivativeResult, 
+        ComputeOptions options = ComputeOptions.ValueAndDerivative, 
+        int varIndex = -1)
     {
-        IReadOnlyList<float> gradient = new float[InputSize];
-        layers[0].ComputeGradient(index, ref gradient, ref data);
+        if(!options.HasFlag(ComputeOptions.Derivative))
+        {
+            valueResult = Run(value);
+            derivativeResult = Array.Empty<float>();
+            return;
+        }
+
+        layers[0].Invoke(value, gradient, out IReadOnlyList<float> tempVal, out IReadOnlyList<float> tempGradient, varIndex: varIndex);
 
         for(int i = 1; i < layers.Count; i++)
         {
-            index -= layers[i].VariableLength;
-            layers[i].ComputeGradient(index, ref gradient, ref data); 
+            varIndex -= layers[i - 1].VariableCount();
+            layers[i].Invoke(tempVal, tempGradient, out tempVal, out tempGradient, varIndex: varIndex);
         }
 
-        return gradient;
+        valueResult = tempVal;
+        derivativeResult = tempGradient;
     }
 
     public void SaveToFile(string path)
