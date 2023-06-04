@@ -1,7 +1,7 @@
 ﻿namespace MachineLearningLibrary;
 
 //TODO: Make ILayer generic with an TData.
-public interface ILayer : IDifferentiable<IReadOnlyList<float>, IReadOnlyList<float>>
+public interface IAgent: IDifferentiable<IReadOnlyList<float>, IReadOnlyList<float>> 
 {
     public int VariableCount();
 

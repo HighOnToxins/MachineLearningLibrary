@@ -33,18 +33,18 @@ internal class AgentTests
             },
         };
 
-        AffineLayer[] layers = new AffineLayer[weights.Length];
+        AffineAgent[] layers = new AffineAgent[weights.Length];
         for(int i = 0; i < weights.Length; i++)
         {
-            layers[i] = new AffineLayer(weights[i]);
+            layers[i] = new AffineAgent(weights[i]);
         }
 
-        Agent agent = new(layers);
+        AgentComposite agent = new(layers);
 
         string filename = "testSave.bin";
 
         agent.SaveToFile(path + filename);
-        Agent loadedAgent = Agent.LoadFromFile(path + filename);
+        AgentComposite loadedAgent = AgentComposite.LoadFromFile(path + filename);
 
         Assert.That(agent.VariableCount(), Is.EqualTo(loadedAgent.VariableCount()));
 
@@ -57,8 +57,8 @@ internal class AgentTests
                     i, j
                 };
 
-                agent.Invoke(data, default, out IReadOnlyList<float> result, out _, ComputeOptions.Value);
-                loadedAgent.Invoke(data, default, out IReadOnlyList<float> result2, out _, ComputeOptions.Value);
+                agent.Invoke(data, out IReadOnlyList<float> result);
+                loadedAgent.Invoke(data, out IReadOnlyList<float> result2);
 
                 Assert.That(result, Is.EquivalentTo(result2));
 

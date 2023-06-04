@@ -1,6 +1,7 @@
 using MachineLearningLibrary;
 using System;
 using System.Data.Common;
+using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -8,7 +9,7 @@ namespace MachineLearningTesting;
 
 internal class LayerTests
 {
-    private class TestLayer: ILayer
+    private class TestLayer: IAgent
     {
         private float weight;
 
@@ -24,33 +25,28 @@ internal class LayerTests
         }
 
         public void Invoke(
+            in IReadOnlyList<float> value,
+            out IReadOnlyList<float> valueResult)
+        {
+            valueResult = new float[] { value[0] + weight };
+        }
+
+        public void Invoke(
             in IReadOnlyList<float> value, 
-            in IReadOnlyList<float>? gradient, 
+            in IReadOnlyList<float>? derivative, 
             out IReadOnlyList<float> valueResult, 
             out IReadOnlyList<float> derivativeResult, 
-            ComputeOptions options = ComputeOptions.ValueAndDerivative, 
             int varIndex = -1)
         {
-            valueResult = Array.Empty<float>();
-            derivativeResult = Array.Empty<float>();
-
-            if(options.HasFlag(ComputeOptions.Value))
-            {
-                valueResult = new float[] { value[0] + weight };
-            }
-
-            if(!options.HasFlag(ComputeOptions.Derivative))
-            {
-                return;
-            }
+            valueResult = new float[] { value[0] + weight };
 
             if(varIndex == 0)
             {
-                valueResult = new float[] { value[0] };
+                derivativeResult = new float[] { value[0] };
             }
             else
             {
-                valueResult = new float[] { 0f };
+                derivativeResult = new float[] { 0f };
             }
         }
 
@@ -75,12 +71,7 @@ internal class LayerTests
             3
         };
 
-        layer.Invoke(
-            data,
-            default,
-            out IReadOnlyList<float> result,
-            out _,
-            ComputeOptions.Value);
+        layer.Invoke(data, out IReadOnlyList<float> result);
 
         Assert.That(result, Has.Count.EqualTo(expected.Length));
         for(int i = 0; i < result.Count; i++)
@@ -109,13 +100,13 @@ internal class LayerTests
             },
         };
 
-        AffineLayer[] layers = new AffineLayer[weights.Length];
+        AffineAgent[] layers = new AffineAgent[weights.Length];
         for(int i = 0; i < weights.Length; i++)
         {
-            layers[i] = new AffineLayer(weights[i]);
+            layers[i] = new AffineAgent(weights[i]);
         }
 
-        Agent agent = new(layers);
+        AgentComposite agent = new(layers);
 
         float[] data = new float[]
         {
@@ -127,7 +118,7 @@ internal class LayerTests
             2318, 2802
         };
 
-        IReadOnlyList<float> result = agent.Run(data);
+        agent.Invoke(data, out IReadOnlyList<float> result);
 
         Assert.That(result, Has.Count.EqualTo(expected.Length));
         for(int i = 0; i < result.Count; i++)
@@ -146,20 +137,20 @@ internal class LayerTests
             },
         };
 
-        AffineLayer[] layers = new AffineLayer[weights.Length];
+        AffineAgent[] layers = new AffineAgent[weights.Length];
         for(int i = 0; i < weights.Length; i++)
         {
-            layers[i] = new AffineLayer(weights[i]);
+            layers[i] = new AffineAgent(weights[i]);
         }
 
-        Agent agent = new(layers);
+        AgentComposite agent = new(layers);
 
         float[] data = new float[]
         {
             0, 0, 0, 0
         };
 
-        Assert.Throws<ArgumentException>(() => agent.Run(data));
+        Assert.Throws<ArgumentException>(() => agent.Invoke(data, out _));
     }
 
     [Test]
@@ -180,13 +171,13 @@ internal class LayerTests
             },
         };
 
-        AffineLayer[] layers = new AffineLayer[weights.Length];
+        AffineAgent[] layers = new AffineAgent[weights.Length];
         for(int i = 0; i < weights.Length; i++)
         {
-            layers[i] = new AffineLayer(weights[i]);
+            layers[i] = new AffineAgent(weights[i]);
         }
 
-        Agent agent = new(layers);
+        AgentComposite agent = new(layers);
 
         IReadOnlyList<float> data = new float[]
         {
@@ -203,7 +194,6 @@ internal class LayerTests
             default,
             out _,
             out IReadOnlyList<float> result,
-            ComputeOptions.Derivative,
             7);
 
         Assert.That(result, Has.Count.EqualTo(expected.Length));

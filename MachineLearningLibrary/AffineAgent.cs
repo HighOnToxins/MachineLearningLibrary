@@ -1,15 +1,14 @@
-﻿using System.Formats.Asn1;
-
+﻿
 namespace MachineLearningLibrary;
 
-public sealed class AffineLayer : ILayer
+public sealed class AffineAgent : IAgent
 {
     private readonly float[][] matrix; //out * in
     private readonly float[] bias; //out
 
     //TODO: add the ability to add your own activation function / activation derivative.
 
-    public AffineLayer(float[][] matrix, float[] bias)
+    public AffineAgent(float[][] matrix, float[] bias)
     {
         this.matrix = matrix;
         this.bias = bias;
@@ -30,7 +29,7 @@ public sealed class AffineLayer : ILayer
         }
     }
 
-    public AffineLayer(float[,] weights)
+    public AffineAgent(float[,] weights)
     {
         matrix = new float[weights.GetLength(0)][];
         for (int outI = 0; outI < OutputSize; outI++)
@@ -49,17 +48,17 @@ public sealed class AffineLayer : ILayer
         }
     }
 
-    public AffineLayer(float[] variables)
+    public AffineAgent(float[] variables)
     {
         throw new NotImplementedException();
     }
 
-    public AffineLayer(int inputCount, int outputCount)
+    public AffineAgent(int inputCount, int outputCount)
     {
         throw new NotImplementedException();
     }
 
-    public AffineLayer(int inputCount, int outputCount, int rangeMin, int rangeMax)
+    public AffineAgent(int inputCount, int outputCount, int rangeMin, int rangeMax)
     {
         throw new NotImplementedException();
     }
@@ -92,16 +91,8 @@ public sealed class AffineLayer : ILayer
         in IReadOnlyList<float>? gradient,
         out IReadOnlyList<float> valueOut,
         out IReadOnlyList<float> gradientOut,
-        ComputeOptions options = ComputeOptions.ValueAndDerivative,
         int varIndex = -1)
     {
-        if (!options.HasFlag(ComputeOptions.Derivative))
-        {
-            valueOut = Invoke(value);
-            gradientOut = Array.Empty<float>();
-            return;
-        }
-
         IReadOnlyList<float> gradientOrDefault = gradient ?? new float[InputSize];
 
         if (value.Count != InputSize || gradientOrDefault.Count != InputSize)
@@ -145,7 +136,7 @@ public sealed class AffineLayer : ILayer
     }
 
 
-    public IReadOnlyList<float> Invoke(IReadOnlyList<float> value)
+    public void Invoke(in IReadOnlyList<float> value, out IReadOnlyList<float> valueResult)
     {
         if (value.Count != InputSize)
         {
@@ -165,7 +156,7 @@ public sealed class AffineLayer : ILayer
             result[outI] = Math.Max(0, result[outI]);
         }
 
-        return result;
+        valueResult = result;
     }
 
     public void WriteToFile(BinaryWriter binWriter)
@@ -187,7 +178,7 @@ public sealed class AffineLayer : ILayer
         }
     }
 
-    internal static ILayer ReadFromFile(BinaryReader binReader)
+    internal static IAgent ReadFromFile(BinaryReader binReader)
     {
         int outputSize = binReader.ReadInt32();
         int inputSize = binReader.ReadInt32();
@@ -210,6 +201,6 @@ public sealed class AffineLayer : ILayer
             bias[outI] = (float)binReader.ReadSingle();
         }
 
-        return new AffineLayer(matrix, bias);
+        return new AffineAgent(matrix, bias);
     }
 }

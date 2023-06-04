@@ -27,7 +27,7 @@ public sealed class Trainer
 
     //TODO: Try running everything with checked on, making sure that no overflows happen.
     //Returns the gradient length.
-    public float Train(Agent agent, float gradientFactor, int batchSize = -1, TrainOption option = TrainOption.Minimize)
+    public float Train(AgentComposite agent, float gradientFactor, int batchSize = -1, TrainOption option = TrainOption.Minimize)
     {
         batchSize = 0 <= batchSize && batchSize < trainingData.Count ? batchSize : trainingData.Count;
         List<IReadOnlyList<float>> tempTrainingData = trainingData.ToList();
@@ -41,19 +41,8 @@ public sealed class Trainer
             //TODO: Compute gradients multi-threaded.
             for(int varIndex = 0; varIndex < averageGradient.Length; varIndex++)
             {
-                agent.Invoke(
-                    tempTrainingData[randomIndex],
-                    default,
-                    out IReadOnlyList<float> valueResult,
-                    out IReadOnlyList<float> agentGradient,
-                    varIndex: varIndex);
-
-                lossFunction.Invoke(
-                    valueResult,
-                    agentGradient,
-                    out _,
-                    out float lossGradient,
-                    ComputeOptions.Derivative);
+                agent.Invoke(tempTrainingData[randomIndex], default, out IReadOnlyList<float> valueResult, out IReadOnlyList<float> agentGradient, varIndex: varIndex);
+                lossFunction.Invoke(valueResult, agentGradient, out _, out float lossGradient);
 
                 averageGradient[varIndex] += (lossGradient - averageGradient[varIndex]) / (b + 1); 
             }
@@ -82,7 +71,7 @@ public sealed class Trainer
     }
 
     //Returns the average loss value.
-    public float Test(Agent agent, int batchSize = -1)
+    public float Test(AgentComposite agent, int batchSize = -1)
     {
         batchSize = 0 <= batchSize && batchSize < testingData.Count ? batchSize : testingData.Count;
         List<IReadOnlyList<float>> tempTestingData = testingData.ToList();
@@ -92,19 +81,8 @@ public sealed class Trainer
         {
             int randomIndex = random.Next(tempTestingData.Count);
 
-            agent.Invoke(
-                tempTestingData[randomIndex],
-                default,
-                out IReadOnlyList<float> prediction,
-                out _,
-                ComputeOptions.Value);
-
-            lossFunction.Invoke(
-                 prediction,
-                 default,
-                 out float loss,
-                 out _,
-                 ComputeOptions.Value);
+            agent.Invoke(tempTestingData[randomIndex], out IReadOnlyList<float> prediction);
+            lossFunction.Invoke(prediction, out float loss);
 
             averageLoss += (loss - averageLoss) / (b + 1); 
             tempTestingData.RemoveAt(randomIndex);

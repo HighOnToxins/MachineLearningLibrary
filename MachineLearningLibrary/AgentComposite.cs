@@ -2,11 +2,11 @@
 
 namespace MachineLearningLibrary;
 
-public sealed class Agent: ILayer
+public sealed class AgentComposite: IAgent 
 {
-    private readonly IReadOnlyList<ILayer> layers;
+    private readonly IReadOnlyList<IAgent> layers;
 
-    public Agent(params ILayer[] layers) {
+    public AgentComposite(params IAgent[] layers) {
         this.layers = layers;
     }
 
@@ -32,31 +32,22 @@ public sealed class Agent: ILayer
         }
     }
 
-    public IReadOnlyList<float> Run(IReadOnlyList<float> value)
+    public void Invoke(in IReadOnlyList<float> value, out IReadOnlyList<float> result)
     {
+        result = value;
         for(int i = 0; i < layers.Count; i++)
         {
-            layers[i].Invoke(value, default, out value, out _, ComputeOptions.Value);
+            layers[i].Invoke(in result, out result);
         }
-
-        return value;
     }
 
     public void Invoke(
         in IReadOnlyList<float> value, 
         in IReadOnlyList<float>? gradient, 
         out IReadOnlyList<float> valueResult, 
-        out IReadOnlyList<float> derivativeResult, 
-        ComputeOptions options = ComputeOptions.ValueAndDerivative, 
+        out IReadOnlyList<float> derivativeResult,
         int varIndex = -1)
     {
-        if(!options.HasFlag(ComputeOptions.Derivative))
-        {
-            valueResult = Run(value);
-            derivativeResult = Array.Empty<float>();
-            return;
-        }
-
         layers[0].Invoke(value, gradient, out IReadOnlyList<float> tempVal, out IReadOnlyList<float> tempGradient, varIndex: varIndex);
 
         for(int i = 1; i < layers.Count; i++)
@@ -83,8 +74,8 @@ public sealed class Agent: ILayer
         {
             switch(layers[i])
             {
-                case Agent: binWriter.Write(0); break;
-                case AffineLayer: binWriter.Write(1); break;
+                case AgentComposite: binWriter.Write(0); break;
+                case AffineAgent: binWriter.Write(1); break;
                 default:  throw new IOException();
             }
 
@@ -92,32 +83,33 @@ public sealed class Agent: ILayer
         }
     }
 
-    public static Agent LoadFromFile(string path)
+    public static AgentComposite LoadFromFile(string path)
     {
         using BinaryReader binReader = new(File.OpenRead(path));
         return ReadFromFile(binReader);
     }
 
-    public static Agent ReadFromFile(BinaryReader binReader)
+    public static AgentComposite ReadFromFile(BinaryReader binReader)
     {
         int layerCount = binReader.ReadInt32();
-        ILayer[] layers = new ILayer[layerCount];
+        IAgent[] layers = new IAgent[layerCount];
 
         for(int i = 0; i < layerCount; i++)
         {
             int layerType = binReader.ReadInt32();
 
             //TODO: Change to use reflection instead of swtich, for determining layer-type.
-            ILayer layer = layerType switch
+            IAgent layer = layerType switch
             {
                 0 => ReadFromFile(binReader),
-                1 => AffineLayer.ReadFromFile(binReader),
+                1 => AffineAgent.ReadFromFile(binReader),
                 _ => throw new IOException(),
             };
+
             layers[i] = layer;
         }
 
-        return new Agent(layers);
+        return new AgentComposite(layers);
     }
 
 }

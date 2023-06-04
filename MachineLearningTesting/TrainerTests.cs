@@ -1,5 +1,6 @@
 ﻿
 using MachineLearningLibrary;
+using System.Globalization;
 
 namespace MachineLearningTesting;
 
@@ -8,26 +9,22 @@ internal class TrainerTests
 
     private sealed class TestLossFunction: IDifferentiable<IReadOnlyList<float>, float>
     {
+        public void Invoke(in IReadOnlyList<float> value, out float valueResult)
+        {
+            valueResult = value[0];
+        }
+
         public void Invoke(
             in IReadOnlyList<float> value, 
             in IReadOnlyList<float>? gradient, 
             out float valueResult, 
             out float derivativeResult, 
-            ComputeOptions options = ComputeOptions.ValueAndDerivative, 
             int varIndex = -1)
         {
-            valueResult = default;
-            derivativeResult = default;
+            IReadOnlyList<float> tempGradient = gradient ?? new float[1];
 
-            if(options.HasFlag(ComputeOptions.Value))
-            {
-                valueResult = value[0];
-            }
-
-            if(options.HasFlag(ComputeOptions.Derivative) && gradient is not null)
-            {
-                derivativeResult = gradient[0];
-            }
+            valueResult = value[0];
+            derivativeResult = tempGradient[0];
         }
 
     }
@@ -46,7 +43,7 @@ internal class TrainerTests
         float[,] weights = new float[,]{
             {5f, 1f},
         };
-        Agent agent = new(new AffineLayer(weights));
+        AgentComposite agent = new(new AffineAgent(weights));
 
         float gradientLength = trainer.Train(agent, 1);
         float expectedGradientLength = 2.5f;
@@ -69,7 +66,7 @@ internal class TrainerTests
         float[,] weights = new float[,]{
             {5f, 1f},
         };
-        Agent agent = new(new AffineLayer(weights));
+        AgentComposite agent = new(new AffineAgent(weights));
 
         float averageLoss = trainer.Test(agent);
         float expectedAverageLoss = 13.5f;
