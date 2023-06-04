@@ -54,10 +54,11 @@ public sealed class Trainer
 
         float gradientLength = (float)Math.Sqrt(gradientLengthSquared);
 
-        //Set the length of the gradient.
+        //Set the length of the gradient, and inverting.
         for(int agentIndex = 0; agentIndex < averageGradient.Length; agentIndex++)
         {
-            averageGradient[agentIndex] *= gradientFactor/gradientLength;
+            //TODO: Take an option in the constructor, to determine if we should maximize or minimize.
+            averageGradient[agentIndex] *= -gradientFactor/gradientLength;
         }
 
         agent.AddGradient(averageGradient);

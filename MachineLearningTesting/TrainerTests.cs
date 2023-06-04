@@ -59,10 +59,10 @@ internal class TrainerTests
         };
         Agent agent = new(new AffineLayer(weights));
 
-        float gradientLength = trainer.Test(agent);
-        float expectedGradientLength = 13.5f;
+        float averageLoss = trainer.Test(agent);
+        float expectedAverageLoss = 13.5f;
 
-        Assert.That(gradientLength, Is.EqualTo(expectedGradientLength));
+        Assert.That(averageLoss, Is.EqualTo(expectedAverageLoss));
     }
 
 }
