@@ -1,5 +1,4 @@
 using MachineLearningLibrary;
-using MachineLearningLibrary.Layers;
 using System;
 using System.Data.Common;
 using System.Reflection;

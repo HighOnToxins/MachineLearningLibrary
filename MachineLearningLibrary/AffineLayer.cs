@@ -1,7 +1,6 @@
-﻿
-namespace MachineLearningLibrary.Layers;
+﻿namespace MachineLearningLibrary;
 
-public sealed class AffineLayer: ILayer
+public sealed class AffineLayer : ILayer
 {
     private readonly float[][] matrix; //out * in
     private readonly float[] bias; //out
@@ -10,20 +9,20 @@ public sealed class AffineLayer: ILayer
 
     public AffineLayer(float[][] matrix, float[] bias)
     {
-        this.matrix = matrix; 
+        this.matrix = matrix;
         this.bias = bias;
 
         int matrix0length = matrix[0].Length;
 
-        for(int i = 0; i < matrix.Length; i++)
+        for (int i = 0; i < matrix.Length; i++)
         {
-            if(matrix[i].Length != matrix0length)
+            if (matrix[i].Length != matrix0length)
             {
                 throw new ArgumentException();
             }
         }
 
-        if(bias.Length != matrix0length)
+        if (bias.Length != matrix0length)
         {
             throw new ArgumentException();
         }
@@ -32,17 +31,17 @@ public sealed class AffineLayer: ILayer
     public AffineLayer(float[,] weights)
     {
         matrix = new float[weights.GetLength(0)][];
-        for(int outI = 0; outI < OutputSize; outI++)
+        for (int outI = 0; outI < OutputSize; outI++)
         {
             matrix[outI] = new float[weights.GetLength(1) - 1];
-            for(int inI = 0; inI < InputSize; inI++)
+            for (int inI = 0; inI < InputSize; inI++)
             {
                 matrix[outI][inI] = weights[outI, inI];
             }
         }
 
         bias = new float[OutputSize];
-        for(int i = 0; i < OutputSize; i++)
+        for (int i = 0; i < OutputSize; i++)
         {
             bias[i] = weights[i, InputSize];
         }
@@ -62,8 +61,8 @@ public sealed class AffineLayer: ILayer
     {
         throw new NotImplementedException();
     }
-    
-    public int VariableCount() 
+
+    public int VariableCount()
         => InputSize * OutputSize + bias.Length;
 
     public int InputSize { get => matrix[0].Length; }
@@ -72,29 +71,29 @@ public sealed class AffineLayer: ILayer
 
     public void AddAll(IReadOnlyList<float> values)
     {
-        for(int outI = 0; outI < OutputSize; outI++)
+        for (int outI = 0; outI < OutputSize; outI++)
         {
-            for(int inI = 0; inI < InputSize; inI++)
+            for (int inI = 0; inI < InputSize; inI++)
             {
-                matrix[outI][inI] += values[outI*OutputSize + inI];
+                matrix[outI][inI] += values[outI * OutputSize + inI];
             }
         }
 
-        for(int outI = 0; outI < OutputSize; outI++)
+        for (int outI = 0; outI < OutputSize; outI++)
         {
             bias[outI] += values[OutputSize * InputSize - 1 + outI];
         }
     }
 
     public void Invoke(
-        in IReadOnlyList<float> value, 
-        in IReadOnlyList<float>? gradient, 
+        in IReadOnlyList<float> value,
+        in IReadOnlyList<float>? gradient,
         out IReadOnlyList<float> valueOut,
-        out IReadOnlyList<float> gradientOut, 
+        out IReadOnlyList<float> gradientOut,
         ComputeOptions options = ComputeOptions.ValueAndDerivative,
         int varIndex = -1)
     {
-        if(!options.HasFlag(ComputeOptions.Derivative))
+        if (!options.HasFlag(ComputeOptions.Derivative))
         {
             valueOut = Invoke(value);
             gradientOut = Array.Empty<float>();
@@ -103,7 +102,7 @@ public sealed class AffineLayer: ILayer
 
         IReadOnlyList<float> gradientOrDefault = gradient ?? new float[InputSize];
 
-        if(value.Count != InputSize || gradientOrDefault.Count != InputSize)
+        if (value.Count != InputSize || gradientOrDefault.Count != InputSize)
         {
             throw new ArgumentException();
         }
@@ -118,9 +117,9 @@ public sealed class AffineLayer: ILayer
         bool biasFlag = InputSize * OutputSize < varIndex && varIndex < (InputSize + 1) * OutputSize;
         int bOutputIndex = varIndex - InputSize * OutputSize;
 
-        for(int outI = 0; outI < OutputSize; outI++)
+        for (int outI = 0; outI < OutputSize; outI++)
         {
-            for(int inI = 0; inI < InputSize; inI++)
+            for (int inI = 0; inI < InputSize; inI++)
             {
                 dataResult[outI] += matrix[outI][inI] * value[inI];
                 gradientResult[outI] += matrix[outI][inI] * gradientOrDefault[inI];
@@ -136,7 +135,7 @@ public sealed class AffineLayer: ILayer
             gradientResult[outI] = dataResult[outI] < 0 ? 0 : gradientResult[outI];
 
             //if dataResult[outI] == 0, then we might have a problem, quick check.
-            if(dataResult[outI] == 0) throw new ArgumentException($"dataResult[{outI}] = 0"); //TODO: Remove dataResult == 0 test.
+            if (dataResult[outI] == 0) throw new ArgumentException($"dataResult[{outI}] = 0"); //TODO: Remove dataResult == 0 test.
         }
 
         valueOut = dataResult;
@@ -146,16 +145,17 @@ public sealed class AffineLayer: ILayer
 
     public IReadOnlyList<float> Invoke(IReadOnlyList<float> value)
     {
-        if(value.Count != InputSize)
+        if (value.Count != InputSize)
         {
             throw new ArgumentException();
         }
 
         float[] result = new float[OutputSize];
 
-        for(int outI = 0; outI < OutputSize; outI++)
+        for (int outI = 0; outI < OutputSize; outI++)
         {
-            for(int inI = 0; inI < InputSize; inI++)
+            //TODO: For larger AI, compute matricies threaded.
+            for (int inI = 0; inI < InputSize; inI++)
             {
                 result[outI] += matrix[outI][inI] * value[inI];
             }

@@ -1,5 +1,4 @@
-﻿using MachineLearningLibrary.Layers;
-namespace MachineLearningLibrary;
+﻿namespace MachineLearningLibrary;
 
 public sealed class Agent: ILayer
 {

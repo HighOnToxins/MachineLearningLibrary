@@ -73,7 +73,6 @@ public sealed class Trainer
         //Set the length of the gradient, and inverting.
         for(int agentIndex = 0; agentIndex < averageGradient.Length; agentIndex++)
         {
-            //TODO: Take an option in the constructor, to determine if we should maximize or minimize.
             float sign = option == TrainOption.Minimize ? -1 : 1;
             averageGradient[agentIndex] *= sign * gradientFactor/gradientLength;
         }
