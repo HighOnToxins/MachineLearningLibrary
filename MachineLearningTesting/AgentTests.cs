@@ -47,5 +47,23 @@ internal class AgentTests
         Agent loadedAgent = Agent.LoadFromFile(path + filename);
 
         Assert.That(agent.VariableCount(), Is.EqualTo(loadedAgent.VariableCount()));
+
+        for(int i = -10; i < 10; i++)
+        {
+            for(int j = -10; j < 10; j++)
+            {
+
+                IReadOnlyList<float> data = new float[] { 
+                    i, j
+                };
+
+                agent.Invoke(data, default, out IReadOnlyList<float> result, out _, ComputeOptions.Value);
+                loadedAgent.Invoke(data, default, out IReadOnlyList<float> result2, out _, ComputeOptions.Value);
+
+                Assert.That(result, Is.EquivalentTo(result2));
+
+            }
+        }
+
     }
 }
