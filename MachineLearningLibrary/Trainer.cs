@@ -2,8 +2,8 @@
 namespace MachineLearningLibrary;
 
 public enum TrainOption{
-    Maximize,
-    Minimize 
+    Maximize = 1,
+    Minimize = -1
 }
 
 public sealed class Trainer
@@ -62,8 +62,8 @@ public sealed class Trainer
         //Set the length of the gradient, and inverting.
         for(int agentIndex = 0; agentIndex < averageGradient.Length; agentIndex++)
         {
-            float sign = option == TrainOption.Minimize ? -1 : 1;
-            averageGradient[agentIndex] *= sign * gradientFactor/gradientLength;
+            int sign = (int)TrainOption.Minimize;
+            averageGradient[agentIndex] *= sign * gradientFactor / gradientLength;
         }
 
         agent.AddAll(averageGradient);

@@ -197,4 +197,75 @@ internal class AgentTests
             Assert.That(result, Has.ItemAt(i).EqualTo(expected[i]));
         }
     }
+
+    [Test]
+    public void CovolutionAgentComputesProperly()
+    {
+        ArrayImage<float> array = new(3);
+        array.AssignByActualIndex((i, v) => 1);
+
+        ConvolutionAgent agent = new(
+            new ArrayImage<float>[] { array }, 
+            new int[] {5}, 
+            new int[] {3});
+
+        ArrayImage<float> image = new(5);
+        image.AssignByActualIndex((i, v) => i);
+
+        agent.Invoke(
+            new ArrayImage<float>[] { image }, 
+            out IImage<float>[] resultImages);
+
+        float[] expected = new float[] { 1, 2, 3};
+
+        for(int i = 0; i < array.GetLength(0); i++)
+        {
+            Assert.That(resultImages[0].GetElementAt(i), Is.EqualTo(expected[i]));
+        }
+    }
+
+    [Test]
+    public void MultiDimensionalCovolutionComputesProper()
+    {
+        ArrayImage<float>[] kernals = new ArrayImage<float>[] {
+            new(3, 4, 5),
+            new(4, 5, 3),
+            new(5, 3, 4)
+        };
+
+        for(int i = 0; i < kernals.Length; i++)
+        {
+            kernals[i].AssignByActualIndex((i, v) => 1);
+        }
+        
+        ConvolutionAgent agent = new(
+            kernals,
+            new int[] { 6, 7, 8 },
+            new int[] { 2, 3, 4 });
+
+        ArrayImage<float> image = new(6, 7, 8);
+        image.AssignByActualIndex((i, v) => i);
+
+        agent.Invoke(
+            new ArrayImage<float>[] { image },
+            out IImage<float>[] resultImages);
+
+        for(int i = 0; i < 3; i++)
+        {
+            for(int a = 0; a < 2; a++)
+            {
+                for(int b = 0; b < 3; b++)
+                {
+                    for(int c = 0; c < 4; c++)
+                    {
+                        Assert.That(
+                            resultImages[i].GetElementAt(a, b, c),
+                            Is.Not.EqualTo(0)
+                        );
+                    }
+                }
+            }
+        }
+
+    }
 }
