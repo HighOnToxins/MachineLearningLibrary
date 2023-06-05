@@ -3,7 +3,6 @@ namespace MachineLearningLibrary;
 
 public interface IDifferentiable<T, TResult>
 {
-
     public void Invoke(in T value, out TResult result);
 
     public void Invoke(
