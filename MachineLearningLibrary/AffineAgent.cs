@@ -136,7 +136,7 @@ public sealed class AffineAgent : IAgent
             int inputIndex = varIndex % OutputSize;
             gradientResult[outputIndex] += valueOut[inputIndex];
         }
-        else if(matrixCount < varIndex && varIndex < VariableCount())
+        else if(matrixCount <= varIndex && varIndex < VariableCount())
         {
             int outputIndex = varIndex - matrixCount;
             gradientResult[outputIndex]++;
