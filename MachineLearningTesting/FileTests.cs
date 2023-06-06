@@ -43,7 +43,7 @@ internal class FileTests
 
         string filename = "testSave.bin";
 
-        agent.SaveToFile(path + filename);
+        ((IAgent)agent).SaveToFile(path + filename);
         AgentComposite loadedAgent = AgentComposite.LoadFromFile(path + filename);
 
         Assert.That(agent.VariableCount(), Is.EqualTo(loadedAgent.VariableCount()));
@@ -52,16 +52,14 @@ internal class FileTests
         {
             for(int j = -10; j < 10; j++)
             {
-
-                IReadOnlyList<float> data = new float[] { 
+                IImage<float> data = new ArrayImage<float>(new float[] {
                     i, j
-                };
+                });
 
-                agent.Invoke(data, out IReadOnlyList<float> result);
-                loadedAgent.Invoke(data, out IReadOnlyList<float> result2);
+                agent.Invoke(data, out IImage<float> result);
+                loadedAgent.Invoke(data, out IImage<float> result2);
 
-                Assert.That(result, Is.EquivalentTo(result2));
-
+                result.ForEach((indecies, v) => Assert.That(v, Is.EqualTo(result2.GetElementAt(indecies))));
             }
         }
 

@@ -7,13 +7,15 @@ public interface IImage<T>
 {
     public int Rank { get; }
 
-    public int GetLength(int dimension);
+    public int ElementCount { get; }
+
+    public int GetLength(Index dimension);
 
     public T GetElementAt(params int[] indecies);
 
-    public bool TryGetElementAt(int[] indecies, [NotNullWhen(true)] out T? element);
+    public bool TryGetElementAt([NotNullWhen(true)] out T? element, params int[] indecies);
 
     public void ForEach(Action<int[], T> action);
-
+    public void LinearForEach(Action<int, T> action);
 }
 

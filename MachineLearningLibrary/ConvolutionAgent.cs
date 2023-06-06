@@ -1,95 +1,99 @@
 ﻿
-using System;
-
 namespace MachineLearningLibrary;
 
-public sealed class ConvolutionAgent
+public sealed class ConvolutionAgent: IAgent
 {
 
-    private readonly ArrayImage<float>[] kernals;
+    private readonly ArrayImage<float> kernals;
 
     private readonly int[] inputLengths;
     private readonly int[] outputLengths;
 
-    public ConvolutionAgent(ArrayImage<float>[] kernals, int[] inputLengths, int[] outputLengths)
+    public ConvolutionAgent(ArrayImage<float> kernals, int[] inputLengths, int[] outputLengths)
     {
         this.kernals = kernals;
         this.inputLengths = inputLengths;
         this.outputLengths = outputLengths;
     }
 
-    public int VariableCount()
-    {
-        throw new NotImplementedException();
-    }
+    public int VariableCount() => kernals.ElementCount;
 
     public void AddAll(IReadOnlyList<float> values)
     {
-        for(int i = 0; i < kernals.Length; i++)
-        {
-            int currentStepSize = 0;
-            kernals[i].AssignByActualIndex((varI, val) =>
-            {
-                return val + values[i*currentStepSize + varI];
-            });
-            currentStepSize += kernals[i].ElementCount;
-        }
+        kernals.AssignByActualIndex((i, v) => v + values[i]);
     }
 
-    //TODO: Create an IMultiArray for determining that the input has the correct size and such.
-    public void Invoke(in IImage<float>[] images, out IImage<float>[] result)
+    public void Invoke(in IImage<float> image, out IImage<float> result)
     {
-        IImage<float>[] tempImages = images;
-        ArrayImage<float>[] resultValues = new ArrayImage<float>[tempImages.Length*kernals.Length];
-
-        int[] offsets = new int[kernals[0].Rank];
-        for(int i = 0; i < offsets.Length; i++)
+        for(int i = 0; i < inputLengths.Length; i++)
         {
-            offsets[i] = (inputLengths[i] - outputLengths[i] - kernals[0].GetLength(i)) / 2;
-        }
-
-        for(int imageNum = 0; imageNum < tempImages.Length; imageNum++)
-        {
-            for(int kernalNum = 0; kernalNum < kernals.Length; kernalNum++)
+            if(image.GetLength(i) != inputLengths[i])
             {
-                int resultIndex = imageNum * kernals.Length + kernalNum;
-                resultValues[resultIndex] = new ArrayImage<float>(outputLengths);
-                resultValues[resultIndex].AssignEeach((resultIndecies, _) =>
-                {
-                    float average = 0;
-                    int countPlusOne = 1;
-
-                    kernals[kernalNum].ForEach((kernalIndecies, kernalElement) => {
-
-                        int[] imageIndecies = new int[kernalIndecies.Length];
-                        for(int i = 0; i < offsets.Length; i++)
-                        {
-                            imageIndecies[i] = offsets[i] + resultIndecies[i] + kernalIndecies[i];
-                        }
-
-                        if(!tempImages[imageNum].TryGetElementAt(imageIndecies, out float imageElement))
-                        {
-                            imageElement = 0;
-                        }
-
-                        average += (kernalElement * imageElement - average) / countPlusOne;
-                        countPlusOne++;
-                    });
-
-                    return average;
-                });
+                throw new ArgumentException();
             }
         }
-        
+
+        IImage<float> tempImages = image;
+        ArrayImage<float> resultValues = new(outputLengths);
+
+        int[] offsets = new int[kernals.Rank];
+        for(int i = 0; i < offsets.Length; i++)
+        {
+            offsets[i] = (inputLengths[i] - outputLengths[i] - kernals.GetLength(i)) / 2;
+        }
+
+        resultValues.AssignEach((resultIndecies, _) =>
+        {
+            int[] offsets2 = new int[kernals.Rank];
+            for(int i = 0; i < offsets2.Length; i++)
+            {
+                offsets2[i] = offsets[i] + resultIndecies[i];
+            }
+
+            float average = 0;
+            int countPlusOne = 1;
+
+            kernals.ForEach((kernalIndecies, kernalElement) => 
+            {
+                int[] imageIndecies = new int[offsets2.Length];
+                for(int i = 0; i < offsets2.Length; i++)
+                {
+                    imageIndecies[i] = offsets2[i] + kernalIndecies[i];
+                }
+
+                if(!tempImages.TryGetElementAt(out float imageElement, imageIndecies))
+                {
+                    return;
+                }
+
+                average += (kernalElement * imageElement - average) / countPlusOne;
+                countPlusOne++;
+            });
+
+            return average;
+        });
+
         result = resultValues;
     }
-
-    public void Invoke(in IReadOnlyList<float> value, in IReadOnlyList<float>? gradient, out IReadOnlyList<float> valueResult, out IReadOnlyList<float> derivativeResult, int varIndex = -1)
+    
+    //TODO: Add derivative part.
+    public void Invoke(
+        in IImage<float> image, 
+        in IImage<float>? gradient, 
+        out IImage<float> valueResult, 
+        out IImage<float> derivativeResult, 
+        int varIndex = -1)
     {
+        //TODO: Assign default gradient.
         throw new NotImplementedException();
     }
 
     public void WriteToFile(BinaryWriter binWriter)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static ConvolutionAgent ReadFromFile(BinaryReader binReader)
     {
         throw new NotImplementedException();
     }

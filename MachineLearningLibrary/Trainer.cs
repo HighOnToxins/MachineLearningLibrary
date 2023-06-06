@@ -8,16 +8,16 @@ public enum TrainOption{
 
 public sealed class Trainer
 {
-    private readonly IReadOnlyList<IReadOnlyList<float>> trainingData;
-    private readonly IReadOnlyList<IReadOnlyList<float>> testingData;
+    private readonly IReadOnlyList<IImage<float>> trainingData;
+    private readonly IReadOnlyList<IImage<float>> testingData;
 
-    private readonly IDifferentiable<IReadOnlyList<float>, float> lossFunction;
+    private readonly IDifferentiable<IImage<float>, float> lossFunction;
 
     private readonly Random random;
 
-    public Trainer(IReadOnlyList<IReadOnlyList<float>> trainingData,
-        IReadOnlyList<IReadOnlyList<float>> testingData,
-        IDifferentiable<IReadOnlyList<float>, float> lossFunction)
+    public Trainer(IReadOnlyList<IImage<float>> trainingData,
+        IReadOnlyList<IImage<float>> testingData,
+        IDifferentiable<IImage<float>, float> lossFunction)
     {
         this.trainingData = trainingData;
         this.testingData = testingData;
@@ -30,7 +30,7 @@ public sealed class Trainer
     public float Train(IAgent agent, float gradientFactor, int batchSize = -1, TrainOption option = TrainOption.Minimize)
     {
         batchSize = 0 <= batchSize && batchSize < trainingData.Count ? batchSize : trainingData.Count;
-        List<IReadOnlyList<float>> tempTrainingData = trainingData.ToList();
+        List<IImage<float>> tempTrainingData = trainingData.ToList();
 
         float[] averageGradient = new float[agent.VariableCount()];
 
@@ -41,7 +41,7 @@ public sealed class Trainer
             //TODO: Compute gradients multi-threaded.
             for(int varIndex = 0; varIndex < averageGradient.Length; varIndex++)
             {
-                agent.Invoke(tempTrainingData[randomIndex], default, out IReadOnlyList<float> valueResult, out IReadOnlyList<float> agentGradient, varIndex: varIndex);
+                agent.Invoke(tempTrainingData[randomIndex], default, out IImage<float> valueResult, out IImage<float> agentGradient, varIndex: varIndex);
                 lossFunction.Invoke(valueResult, agentGradient, out _, out float lossGradient);
 
                 averageGradient[varIndex] += (lossGradient - averageGradient[varIndex]) / (b + 1); 
@@ -74,14 +74,14 @@ public sealed class Trainer
     public float Test(IAgent agent, int batchSize = -1)
     {
         batchSize = 0 <= batchSize && batchSize < testingData.Count ? batchSize : testingData.Count;
-        List<IReadOnlyList<float>> tempTestingData = testingData.ToList();
+        List<IImage<float>> tempTestingData = testingData.ToList();
 
         float averageLoss = 0;
         for(int b = 0; b < batchSize; b++)
         {
             int randomIndex = random.Next(tempTestingData.Count);
 
-            agent.Invoke(tempTestingData[randomIndex], out IReadOnlyList<float> prediction);
+            agent.Invoke(tempTestingData[randomIndex], out IImage<float> prediction);
             lossFunction.Invoke(prediction, out float loss);
 
             averageLoss += (loss - averageLoss) / (b + 1); 

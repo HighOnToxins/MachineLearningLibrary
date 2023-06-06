@@ -87,21 +87,21 @@ public sealed class AffineAgent : IAgent
     }
 
     public void Invoke(
-        in IReadOnlyList<float> value,
-        in IReadOnlyList<float>? gradient,
-        out IReadOnlyList<float> valueOut,
-        out IReadOnlyList<float> gradientOut,
+        in IImage<float> value,
+        in IImage<float>? gradient,
+        out IImage<float> valueOut,
+        out IImage<float> gradientOut,
         int varIndex = -1)
     {
-        IReadOnlyList<float> gradientOrDefault = gradient ?? new float[InputSize];
+        IImage<float> gradientOrDefault = gradient ?? new ArrayImage<float>(InputSize);
 
-        if (value.Count != InputSize || gradientOrDefault.Count != InputSize)
+        if (value.GetLength(0) != InputSize || gradientOrDefault.GetLength(0) != InputSize)
         {
             throw new ArgumentException();
         }
 
-        float[] gradientResult = new float[OutputSize];
-        float[] dataResult = new float[OutputSize];
+        ArrayImage<float> gradientResult = new(OutputSize);
+        ArrayImage<float> dataResult = new(OutputSize);
 
         bool matrixFlag = 0 <= varIndex && varIndex < InputSize * OutputSize;
         int outputIndex = varIndex / OutputSize;
@@ -112,23 +112,26 @@ public sealed class AffineAgent : IAgent
 
         for (int outI = 0; outI < OutputSize; outI++)
         {
-            for (int inI = 0; inI < InputSize; inI++)
+            value.LinearForEach((inI, v) =>
             {
-                dataResult[outI] += matrix[outI][inI] * value[inI];
-                gradientResult[outI] += matrix[outI][inI] * gradientOrDefault[inI];
+                dataResult.AssignElementAt(dataResult.GetElementAt(outI) + matrix[outI][inI] * v, outI);
+            });
+            dataResult.AssignElementAt(dataResult.GetElementAt(outI) + bias[outI], outI);
+
+            if(dataResult.GetElementAt(outI) <= 0)
+            {
+                dataResult.AssignElementAt(0, outI);
+                continue;
             }
 
-            dataResult[outI] += bias[outI];
+            gradientOrDefault.LinearForEach((inI, g) => 
+            {
+                gradientResult.AssignElementAt(gradientResult.GetElementAt(outI) + matrix[outI][inI] * g, outI);
+            });
 
-            float differentiatedMatrixOIPart = matrixFlag && outI == outputIndex ? value[inputIndex] : 0;
+            float differentiatedMatrixOIPart = matrixFlag && outI == outputIndex ? value.GetElementAt(inputIndex) : 0;
             int differentiatedBias = biasFlag && outI == bOutputIndex ? 1 : 0;
-            gradientResult[outI] += differentiatedMatrixOIPart + differentiatedBias;
-
-            dataResult[outI] = Math.Max(0, dataResult[outI]);
-            gradientResult[outI] = dataResult[outI] < 0 ? 0 : gradientResult[outI];
-
-            //if dataResult[outI] == 0, then we might have a problem, quick check.
-            if (dataResult[outI] == 0) throw new ArgumentException($"dataResult[{outI}] = 0"); //TODO: Remove dataResult == 0 test.
+            gradientResult.AssignElementAt(gradientResult.GetElementAt(outI) + differentiatedMatrixOIPart + differentiatedBias, outI);
         }
 
         valueOut = dataResult;
@@ -136,24 +139,24 @@ public sealed class AffineAgent : IAgent
     }
 
 
-    public void Invoke(in IReadOnlyList<float> value, out IReadOnlyList<float> valueResult)
+    public void Invoke(in IImage<float> value, out IImage<float> valueResult)
     {
-        if (value.Count != InputSize)
+        if (value.ElementCount != InputSize)
         {
             throw new ArgumentException();
         }
 
-        float[] result = new float[OutputSize];
+        ArrayImage<float> result = new(OutputSize);
 
         for (int outI = 0; outI < OutputSize; outI++)
         {
             //TODO: For larger AI, compute matricies threaded.
-            for (int inI = 0; inI < InputSize; inI++)
+            value.LinearForEach((inI, v) =>
             {
-                result[outI] += matrix[outI][inI] * value[inI];
-            }
-            result[outI] += bias[outI];
-            result[outI] = Math.Max(0, result[outI]);
+                result.AssignElementAt(result.GetElementAt(inI) + matrix[outI][inI] * v, inI);
+            });
+
+            result.AssignElementAt(Math.Max(0, result.GetElementAt(outI) + bias[outI]), outI);
         }
 
         valueResult = result;

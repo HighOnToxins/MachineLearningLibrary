@@ -17,6 +17,25 @@ public class ArrayImage<T>: IImage<T> where T : notnull
         array = new T[stepSizes[^1]];
     }
 
+    public ArrayImage(IReadOnlyList<T> array, params int[] lengths)
+    {
+        if(lengths.Length == 0)
+        {
+            this.lengths = new int[] {array.Count};
+        }
+        else
+        {
+            this.lengths = lengths;
+        }
+        
+        stepSizes = ComputeStepSizes(lengths);
+        if(array.Count != stepSizes[^1])
+        {
+            throw new ArgumentException();
+        }
+        this.array = array.ToArray();
+    }
+
     private static int[] ComputeStepSizes(int[] lengths)
     {
         if(lengths.Length == 0)
@@ -37,13 +56,13 @@ public class ArrayImage<T>: IImage<T> where T : notnull
 
     public int Rank => lengths.Length;
 
-    public int ElementCount => stepSizes[^1];
+    public int ElementCount => array.Length;
 
-    public int GetLength(int dimension) => lengths[dimension];
+    public int GetLength(Index dimension) => lengths[dimension];
 
     public T GetElementAt(params int[] indecies) => array[GetActualIndex(indecies)];
 
-    public bool TryGetElementAt(int[] indecies, [NotNullWhen(true)] out T? element)
+    public bool TryGetElementAt([NotNullWhen(true)] out T? element, params int[] indecies)
     {
         try
         {
@@ -67,7 +86,15 @@ public class ArrayImage<T>: IImage<T> where T : notnull
         }
     }
 
-    public void AssignEeach(Func<int[], T, T> assignment)
+    public void LinearForEach(Action<int, T> action)
+    {
+        for(int i = 0; i < array.Length; i++)
+        {
+            action.Invoke(i, array[i]);
+        }
+    }
+
+    public void AssignEach(Func<int[], T, T> assignment)
     {
         for(int i = 0; i < array.Length; i++)
         {

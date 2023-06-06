@@ -32,7 +32,7 @@ public sealed class AgentComposite: IAgent
         }
     }
 
-    public void Invoke(in IReadOnlyList<float> value, out IReadOnlyList<float> result)
+    public void Invoke(in IImage<float> value, out IImage<float> result)
     {
         result = value;
         for(int i = 0; i < layers.Count; i++)
@@ -42,13 +42,13 @@ public sealed class AgentComposite: IAgent
     }
 
     public void Invoke(
-        in IReadOnlyList<float> value, 
-        in IReadOnlyList<float>? gradient, 
-        out IReadOnlyList<float> valueResult, 
-        out IReadOnlyList<float> derivativeResult,
+        in IImage<float> value, 
+        in IImage<float>? gradient, 
+        out IImage<float> valueResult, 
+        out IImage<float> derivativeResult,
         int varIndex = -1)
     {
-        layers[0].Invoke(value, gradient, out IReadOnlyList<float> tempVal, out IReadOnlyList<float> tempGradient, varIndex: varIndex);
+        layers[0].Invoke(value, gradient, out IImage<float> tempVal, out IImage<float> tempGradient, varIndex: varIndex);
 
         for(int i = 1; i < layers.Count; i++)
         {
@@ -58,12 +58,6 @@ public sealed class AgentComposite: IAgent
 
         valueResult = tempVal;
         derivativeResult = tempGradient;
-    }
-
-    public void SaveToFile(string path)
-    {
-        using BinaryWriter binWriter = new(File.Create(path));
-        WriteToFile(binWriter);
     }
 
     public void WriteToFile(BinaryWriter binWriter)
@@ -76,13 +70,14 @@ public sealed class AgentComposite: IAgent
             {
                 case AgentComposite: binWriter.Write(0); break;
                 case AffineAgent: binWriter.Write(1); break;
+                case ConvolutionAgent: binWriter.Write(2); break;
                 default:  throw new IOException();
             }
 
             layers[i].WriteToFile(binWriter);
         }
     }
-
+    
     public static AgentComposite LoadFromFile(string path)
     {
         using BinaryReader binReader = new(File.OpenRead(path));
@@ -103,6 +98,7 @@ public sealed class AgentComposite: IAgent
             {
                 0 => ReadFromFile(binReader),
                 1 => AffineAgent.ReadFromFile(binReader),
+                2 => ConvolutionAgent.ReadFromFile(binReader),
                 _ => throw new IOException(),
             };
 

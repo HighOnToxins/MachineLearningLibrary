@@ -1,9 +1,4 @@
 using MachineLearningLibrary;
-using System;
-using System.Data.Common;
-using System.Globalization;
-using System.Reflection;
-using System.Reflection.Emit;
 
 namespace MachineLearningTesting;
 
@@ -25,29 +20,35 @@ internal class AgentTests
         }
 
         public void Invoke(
-            in IReadOnlyList<float> value,
-            out IReadOnlyList<float> valueResult)
+            in IImage<float> value,
+            out IImage<float> valueResult)
         {
-            valueResult = new float[] { value[0] + weight };
+            ArrayImage<float> tempValueResult = new(1);
+            tempValueResult.AssignElementAt(value.GetElementAt(0) + weight, 0);
+            valueResult = tempValueResult;
         }
 
         public void Invoke(
-            in IReadOnlyList<float> value, 
-            in IReadOnlyList<float>? derivative, 
-            out IReadOnlyList<float> valueResult, 
-            out IReadOnlyList<float> derivativeResult, 
+            in IImage<float> value, 
+            in IImage<float>? derivative, 
+            out IImage<float> valueResult, 
+            out IImage<float> derivativeResult, 
             int varIndex = -1)
         {
-            valueResult = new float[] { value[0] + weight };
+            ArrayImage<float> tempValueResult = new (1);
+            tempValueResult.AssignElementAt(value.GetElementAt(0) + weight, 0);
+            valueResult = tempValueResult;
 
+            ArrayImage<float> tempDerivativeResult = new(1);
             if(varIndex == 0)
             {
-                derivativeResult = new float[] { value[0] };
+                tempDerivativeResult.AssignElementAt(value.GetElementAt(0), 0);
             }
             else
             {
-                derivativeResult = new float[] { 0f };
+                tempDerivativeResult.AssignElementAt(0, 0);
             }
+            derivativeResult = tempDerivativeResult;
         }
 
         public void WriteToFile(BinaryWriter binWriter)
@@ -61,20 +62,20 @@ internal class AgentTests
     {
         TestAgent agent = new(2);
 
-        float[] data = new float[]
+        IImage<float> data = new ArrayImage<float>(new float[]
         {
             1
-        };
+        });
 
         float[] expected = new float[]
         {
             3
         };
 
-        agent.Invoke(data, out IReadOnlyList<float> result);
+        agent.Invoke(data, out IImage<float> result);
 
-        Assert.That(result, Has.Count.EqualTo(expected.Length));
-        for(int i = 0; i < result.Count; i++)
+        Assert.That(result.GetLength(0), Is.EqualTo(expected.Length));
+        for(int i = 0; i < result.GetLength(0); i++)
         {
             Assert.That(result, Has.ItemAt(i).EqualTo(expected[i]));
         }
@@ -108,22 +109,22 @@ internal class AgentTests
 
         IAgent agent = new AgentComposite(layers);
 
-        float[] data = new float[]
+        IImage<float> data = new ArrayImage<float>(new float[]
         {
             1, 2
-        };
+        });
 
         float[] expected = new float[]
         {
             2318, 2802
         };
 
-        agent.Invoke(data, out IReadOnlyList<float> result);
+        agent.Invoke(data, out IImage<float> result);
 
-        Assert.That(result, Has.Count.EqualTo(expected.Length));
-        for(int i = 0; i < result.Count; i++)
+        Assert.That(result.GetLength(0), Is.EqualTo(expected.Length));
+        for(int i = 0; i < result.GetLength(0); i++)
         {
-            Assert.That(result, Has.ItemAt(i).EqualTo(expected[i]));
+            Assert.That(result.GetElementAt(i), Is.EqualTo(expected[i]));
         }
     }
 
@@ -145,10 +146,10 @@ internal class AgentTests
 
         IAgent agent = new AgentComposite(layers);
 
-        float[] data = new float[]
+        IImage<float> data = new ArrayImage<float>(new float[]
         {
             0, 0, 0, 0
-        };
+        });
 
         Assert.Throws<ArgumentException>(() => agent.Invoke(data, out _));
     }
@@ -179,20 +180,20 @@ internal class AgentTests
 
         IAgent agent = new AgentComposite(layers);
 
-        IReadOnlyList<float> data = new float[]
+        IImage<float> data = new ArrayImage<float>(new float[]
         {
             1, 2
-        };
+        });
 
         float[] expected = new float[]
         {
             108, 132
         };
 
-        agent.Invoke(data, default, out _, out IReadOnlyList<float> result, 7);
+        agent.Invoke(data, default, out _, out IImage<float> result, 7);
 
-        Assert.That(result, Has.Count.EqualTo(expected.Length));
-        for(int i = 0; i < result.Count; i++)
+        Assert.That(result.GetLength(0), Is.EqualTo(expected.Length));
+        for(int i = 0; i < result.GetLength(0); i++)
         {
             Assert.That(result, Has.ItemAt(i).EqualTo(expected[i]));
         }
@@ -205,7 +206,7 @@ internal class AgentTests
         array.AssignByActualIndex((i, v) => 1);
 
         ConvolutionAgent agent = new(
-            new ArrayImage<float>[] { array }, 
+            array, 
             new int[] {5}, 
             new int[] {3});
 
@@ -213,56 +214,46 @@ internal class AgentTests
         image.AssignByActualIndex((i, v) => i);
 
         agent.Invoke(
-            new ArrayImage<float>[] { image }, 
-            out IImage<float>[] resultImages);
+            image, 
+            out IImage<float> resultImages);
 
         float[] expected = new float[] { 1, 2, 3};
 
         for(int i = 0; i < array.GetLength(0); i++)
         {
-            Assert.That(resultImages[0].GetElementAt(i), Is.EqualTo(expected[i]));
+            Assert.That(resultImages.GetElementAt(i), Is.EqualTo(expected[i]));
         }
     }
 
     [Test]
     public void MultiDimensionalCovolutionComputesProper()
     {
-        ArrayImage<float>[] kernals = new ArrayImage<float>[] {
-            new(3, 4, 5),
-            new(4, 5, 3),
-            new(5, 3, 4)
-        };
+        ArrayImage<float> kernals = new(2, 3, 4);
+        kernals.AssignByActualIndex((i, _) => 1);
 
-        for(int i = 0; i < kernals.Length; i++)
-        {
-            kernals[i].AssignByActualIndex((i, v) => 1);
-        }
-        
         ConvolutionAgent agent = new(
             kernals,
-            new int[] { 6, 7, 8 },
-            new int[] { 2, 3, 4 });
+            new int[] { 2, 3, 4 },
+            new int[] { 2, 2, 2 });
 
         ArrayImage<float> image = new(6, 7, 8);
         image.AssignByActualIndex((i, v) => i);
 
-        agent.Invoke(
-            new ArrayImage<float>[] { image },
-            out IImage<float>[] resultImages);
+        agent.Invoke(image, out IImage<float> resultImage);
 
-        for(int i = 0; i < 3; i++)
+        Assert.That(resultImage.GetLength(0), Is.EqualTo(2));
+        for(int a = 0; a < resultImage.GetLength(0); a++)
         {
-            for(int a = 0; a < 2; a++)
+            Assert.That(resultImage.GetLength(1), Is.EqualTo(2));
+            for(int b = 0; b < resultImage.GetLength(1); b++)
             {
-                for(int b = 0; b < 3; b++)
+                Assert.That(resultImage.GetLength(2), Is.EqualTo(2));
+                for(int c = 0; c < resultImage.GetLength(2); c++)
                 {
-                    for(int c = 0; c < 4; c++)
-                    {
-                        Assert.That(
-                            resultImages[i].GetElementAt(a, b, c),
-                            Is.Not.EqualTo(0)
-                        );
-                    }
+                    Assert.That(
+                        resultImage.GetElementAt(a, b, c),
+                        Is.Not.EqualTo(0)
+                    );
                 }
             }
         }
