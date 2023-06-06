@@ -24,7 +24,7 @@ internal class AgentTests
             out IImage<float> valueResult)
         {
             ArrayImage<float> tempValueResult = new(1);
-            tempValueResult.AssignElementAt(value.GetElementAt(0) + weight, 0);
+            tempValueResult.AssignElementAt(value.ElementAt(0) + weight, 0);
             valueResult = tempValueResult;
         }
 
@@ -36,13 +36,13 @@ internal class AgentTests
             int varIndex = -1)
         {
             ArrayImage<float> tempValueResult = new (1);
-            tempValueResult.AssignElementAt(value.GetElementAt(0) + weight, 0);
+            tempValueResult.AssignElementAt(value.ElementAt(0) + weight, 0);
             valueResult = tempValueResult;
 
             ArrayImage<float> tempDerivativeResult = new(1);
             if(varIndex == 0)
             {
-                tempDerivativeResult.AssignElementAt(value.GetElementAt(0), 0);
+                tempDerivativeResult.AssignElementAt(value.ElementAt(0), 0);
             }
             else
             {
@@ -77,7 +77,7 @@ internal class AgentTests
         Assert.That(result.GetLength(0), Is.EqualTo(expected.Length));
         for(int i = 0; i < result.GetLength(0); i++)
         {
-            Assert.That(result.GetElementAt(i), Is.EqualTo(expected[i]));
+            Assert.That(result.ElementAt(i), Is.EqualTo(expected[i]));
         }
 
         Assert.Pass();
@@ -124,7 +124,7 @@ internal class AgentTests
         Assert.That(result.GetLength(0), Is.EqualTo(expected.Length));
         for(int i = 0; i < result.GetLength(0); i++)
         {
-            Assert.That(result.GetElementAt(i), Is.EqualTo(expected[i]));
+            Assert.That(result.ElementAt(i), Is.EqualTo(expected[i]));
         }
     }
 
@@ -195,7 +195,7 @@ internal class AgentTests
         Assert.That(result.GetLength(0), Is.EqualTo(expected.Length));
         for(int i = 0; i < result.GetLength(0); i++)
         {
-            Assert.That(result.GetElementAt(i), Is.EqualTo(expected[i]));
+            Assert.That(result.ElementAt(i), Is.EqualTo(expected[i]));
         }
     }
 
@@ -221,7 +221,7 @@ internal class AgentTests
 
         for(int i = 0; i < array.GetLength(0); i++)
         {
-            Assert.That(resultImages.GetElementAt(i), Is.EqualTo(expected[i]));
+            Assert.That(resultImages.ElementAt(i), Is.EqualTo(expected[i]));
         }
     }
 
@@ -251,7 +251,7 @@ internal class AgentTests
                 for(int c = 0; c < resultImage.GetLength(2); c++)
                 {
                     Assert.That(
-                        resultImage.GetElementAt(a, b, c),
+                        resultImage.ElementAt(a, b, c),
                         Is.Not.EqualTo(0)
                     );
                 }

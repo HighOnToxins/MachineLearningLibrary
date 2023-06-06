@@ -11,11 +11,12 @@ public interface IImage<T>
 
     public int GetLength(Index dimension);
 
-    public T GetElementAt(params int[] indecies);
+    public T ElementAt(params int[] indecies);
 
-    public bool TryGetElementAt([NotNullWhen(true)] out T? element, params int[] indecies);
+    public bool TryElementAt([NotNullWhen(true)] out T? element, params int[] indecies);
 
     public void ForEach(Action<int[], T> action);
+    
     public void LinearForEach(Action<int, T> action);
 }
 

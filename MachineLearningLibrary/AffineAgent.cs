@@ -114,11 +114,11 @@ public sealed class AffineAgent : IAgent
         {
             value.LinearForEach((inI, v) =>
             {
-                dataResult.AssignElementAt(dataResult.GetElementAt(outI) + matrix[outI][inI] * v, outI);
+                dataResult.AssignElementAt(dataResult.ElementAt(outI) + matrix[outI][inI] * v, outI);
             });
-            dataResult.AssignElementAt(dataResult.GetElementAt(outI) + bias[outI], outI);
+            dataResult.AssignElementAt(dataResult.ElementAt(outI) + bias[outI], outI);
 
-            if(dataResult.GetElementAt(outI) <= 0)
+            if(dataResult.ElementAt(outI) <= 0)
             {
                 dataResult.AssignElementAt(0, outI);
                 continue;
@@ -126,12 +126,12 @@ public sealed class AffineAgent : IAgent
 
             gradientOrDefault.LinearForEach((inI, g) => 
             {
-                gradientResult.AssignElementAt(gradientResult.GetElementAt(outI) + matrix[outI][inI] * g, outI);
+                gradientResult.AssignElementAt(gradientResult.ElementAt(outI) + matrix[outI][inI] * g, outI);
             });
 
-            float differentiatedMatrixOIPart = matrixFlag && outI == outputIndex ? value.GetElementAt(inputIndex) : 0;
+            float differentiatedMatrixOIPart = matrixFlag && outI == outputIndex ? value.ElementAt(inputIndex) : 0;
             int differentiatedBias = biasFlag && outI == bOutputIndex ? 1 : 0;
-            gradientResult.AssignElementAt(gradientResult.GetElementAt(outI) + differentiatedMatrixOIPart + differentiatedBias, outI);
+            gradientResult.AssignElementAt(gradientResult.ElementAt(outI) + differentiatedMatrixOIPart + differentiatedBias, outI);
         }
 
         valueOut = dataResult;
@@ -153,10 +153,10 @@ public sealed class AffineAgent : IAgent
             //TODO: For larger AI, compute matricies threaded.
             value.LinearForEach((inI, v) =>
             {
-                result.AssignElementAt(result.GetElementAt(outI) + matrix[outI][inI] * v, outI);
+                result.AssignElementAt(result.ElementAt(outI) + matrix[outI][inI] * v, outI);
             });
 
-            result.AssignElementAt(Math.Max(0, result.GetElementAt(outI) + bias[outI]), outI);
+            result.AssignElementAt(Math.Max(0, result.ElementAt(outI) + bias[outI]), outI);
         }
 
         valueResult = result;

@@ -61,7 +61,7 @@ public sealed class ConvolutionAgent: IAgent
                     imageIndecies[i] = offsets2[i] + kernalIndecies[i];
                 }
 
-                if(!tempImages.TryGetElementAt(out float imageElement, imageIndecies))
+                if(!tempImages.TryElementAt(out float imageElement, imageIndecies))
                 {
                     return;
                 }

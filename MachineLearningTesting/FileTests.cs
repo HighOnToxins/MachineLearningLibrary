@@ -59,7 +59,7 @@ internal class FileTests
                 agent.Invoke(data, out IImage<float> result);
                 loadedAgent.Invoke(data, out IImage<float> result2);
 
-                result.ForEach((indecies, v) => Assert.That(v, Is.EqualTo(result2.GetElementAt(indecies))));
+                result.ForEach((indecies, v) => Assert.That(v, Is.EqualTo(result2.ElementAt(indecies))));
             }
         }
 

@@ -11,7 +11,7 @@ internal class TrainerTests
     {
         public void Invoke(in IImage<float> value, out float valueResult)
         {
-            valueResult = value.GetElementAt(0);
+            valueResult = value.ElementAt(0);
         }
 
         public void Invoke(
@@ -23,8 +23,8 @@ internal class TrainerTests
         {
             IImage<float> tempGradient = gradient ?? new ArrayImage<float>(1);
 
-            valueResult = value.GetElementAt(0);
-            derivativeResult = tempGradient.GetElementAt(0);
+            valueResult = value.ElementAt(0);
+            derivativeResult = tempGradient.ElementAt(0);
         }
     }
 

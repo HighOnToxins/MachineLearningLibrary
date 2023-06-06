@@ -32,7 +32,7 @@ internal sealed class ImageTests
                 for(int k = 0; k < ints.GetLength(1); k++)
                 {
                     image.AssignElementAt(ints[i, j, k], i, j, k);
-                    Assert.That(image.GetElementAt(i, j, k), Is.EqualTo(ints[i, j, k]));
+                    Assert.That(image.ElementAt(i, j, k), Is.EqualTo(ints[i, j, k]));
                 }
             }
         }

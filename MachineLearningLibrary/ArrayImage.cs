@@ -60,13 +60,13 @@ public class ArrayImage<T>: IImage<T> where T : notnull
 
     public int GetLength(Index dimension) => lengths[dimension];
 
-    public T GetElementAt(params int[] indecies) => array[GetActualIndex(indecies)];
+    public T ElementAt(params int[] indecies) => array[GetActualIndex(indecies)];
 
-    public bool TryGetElementAt([NotNullWhen(true)] out T? element, params int[] indecies)
+    public bool TryElementAt([NotNullWhen(true)] out T? element, params int[] indecies)
     {
         try
         {
-            element = GetElementAt(indecies);
+            element = ElementAt(indecies);
             return true;
         }
         catch
