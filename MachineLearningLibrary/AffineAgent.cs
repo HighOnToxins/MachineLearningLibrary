@@ -100,7 +100,7 @@ public sealed class AffineAgent : IAgent
         out IReadOnlyList<float> gradientOut,
         int varIndex = -1)
     {
-        Invoke(value, out valueOut);
+        Invoke(value, out IReadOnlyList<float> valueResult);
         float[] gradientResult = new float[OutputSize];
 
         if(gradient is not null)
@@ -109,7 +109,7 @@ public sealed class AffineAgent : IAgent
             
             for(int outI = 0; outI < OutputSize; outI++)
             {
-                if(valueOut[outI] == 0) continue;
+                if(valueResult[outI] == 0) continue;
 
                 for(int inI = 0; inI < InputSize; inI++)
                 {
@@ -119,22 +119,22 @@ public sealed class AffineAgent : IAgent
         }
 
         //Speed test v1: 
-//      byte matrixFlag = (0 <= varIndex && varIndex < matrixCount).ToByte();
-//      int mOutputIndex = varIndex / OutputSize;
-//      int inputIndex = varIndex % OutputSize;
-//      
-//      byte biasFlag = (matrixCount < varIndex && varIndex < VariableCount()).ToByte();
-//      int bOutputIndex = varIndex - matrixCount;
-//      
-//      int outputIndex = matrixFlag*mOutputIndex + biasFlag*bOutputIndex;
-//      gradientResult[outputIndex] += matrixFlag*value[inputIndex] + biasFlag;
+        //int matrixFlag = (0 <= varIndex).ToByte() * (varIndex < matrixCount).ToByte();
+        //int mOutputIndex = varIndex / OutputSize;
+        //int inputIndex = varIndex % OutputSize;
+
+        //int biasFlag = (matrixCount < varIndex).ToByte() * (varIndex < VariableCount()).ToByte();
+        //int bOutputIndex = varIndex - matrixCount;
+
+        //int outputIndex = matrixFlag * mOutputIndex + biasFlag * bOutputIndex;
+        //gradientResult[outputIndex] += matrixFlag * value[inputIndex] + biasFlag;
 
         //Speed test v2
         if(0 <= varIndex && varIndex < matrixCount)
         {
             int outputIndex = varIndex / OutputSize;
             int inputIndex = varIndex % OutputSize;
-            gradientResult[outputIndex] += valueOut[inputIndex];
+            gradientResult[outputIndex] += value[inputIndex];
         }
         else if(matrixCount <= varIndex && varIndex < VariableCount())
         {
@@ -142,6 +142,7 @@ public sealed class AffineAgent : IAgent
             gradientResult[outputIndex]++;
         }
 
+        valueOut = valueResult;
         gradientOut = gradientResult;
     }
 
