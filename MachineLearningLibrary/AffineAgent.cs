@@ -153,7 +153,7 @@ public sealed class AffineAgent : IAgent
             //TODO: For larger AI, compute matricies threaded.
             value.LinearForEach((inI, v) =>
             {
-                result.AssignElementAt(result.GetElementAt(inI) + matrix[outI][inI] * v, inI);
+                result.AssignElementAt(result.GetElementAt(outI) + matrix[outI][inI] * v, outI);
             });
 
             result.AssignElementAt(Math.Max(0, result.GetElementAt(outI) + bias[outI]), outI);

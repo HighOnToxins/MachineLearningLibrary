@@ -28,7 +28,7 @@ public class ArrayImage<T>: IImage<T> where T : notnull
             this.lengths = lengths;
         }
         
-        stepSizes = ComputeStepSizes(lengths);
+        stepSizes = ComputeStepSizes(this.lengths);
         if(array.Count != stepSizes[^1])
         {
             throw new ArgumentException();

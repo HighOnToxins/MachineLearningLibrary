@@ -77,7 +77,7 @@ internal class AgentTests
         Assert.That(result.GetLength(0), Is.EqualTo(expected.Length));
         for(int i = 0; i < result.GetLength(0); i++)
         {
-            Assert.That(result, Has.ItemAt(i).EqualTo(expected[i]));
+            Assert.That(result.GetElementAt(i), Is.EqualTo(expected[i]));
         }
 
         Assert.Pass();
@@ -195,7 +195,7 @@ internal class AgentTests
         Assert.That(result.GetLength(0), Is.EqualTo(expected.Length));
         for(int i = 0; i < result.GetLength(0); i++)
         {
-            Assert.That(result, Has.ItemAt(i).EqualTo(expected[i]));
+            Assert.That(result.GetElementAt(i), Is.EqualTo(expected[i]));
         }
     }
 
@@ -236,7 +236,7 @@ internal class AgentTests
             new int[] { 2, 3, 4 },
             new int[] { 2, 2, 2 });
 
-        ArrayImage<float> image = new(6, 7, 8);
+        ArrayImage<float> image = new(2, 3, 4);
         image.AssignByActualIndex((i, v) => i);
 
         agent.Invoke(image, out IImage<float> resultImage);
