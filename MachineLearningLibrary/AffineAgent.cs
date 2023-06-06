@@ -1,10 +1,14 @@
 ﻿
+using System.Runtime.CompilerServices;
+
 namespace MachineLearningLibrary;
 
 public sealed class AffineAgent : IAgent
 {
     private readonly float[][] matrix; //out * in
     private readonly float[] bias; //out
+
+    private readonly int matrixCount;
 
     //TODO: add the ability to add your own activation function / activation derivative.
 
@@ -14,7 +18,6 @@ public sealed class AffineAgent : IAgent
         this.bias = bias;
 
         int matrix0length = matrix[0].Length;
-
         for (int i = 0; i < matrix.Length; i++)
         {
             if (matrix[i].Length != matrix0length)
@@ -27,6 +30,8 @@ public sealed class AffineAgent : IAgent
         {
             throw new ArgumentException();
         }
+
+        matrixCount = matrix.Length * matrix0length;
     }
 
     public AffineAgent(float[,] weights)
@@ -64,7 +69,7 @@ public sealed class AffineAgent : IAgent
     }
 
     public int VariableCount()
-        => InputSize * OutputSize + bias.Length;
+        => matrixCount + bias.Length;
 
     public int InputSize { get => matrix[0].Length; }
 
@@ -93,45 +98,47 @@ public sealed class AffineAgent : IAgent
         out IReadOnlyList<float> gradientOut,
         int varIndex = -1)
     {
-        IReadOnlyList<float> gradientOrDefault = gradient ?? new float[InputSize];
-
-        if (value.Count != InputSize || gradientOrDefault.Count != InputSize)
-        {
+        if (gradient is not null && gradient.Count != InputSize)
             throw new ArgumentException();
-        }
+        IReadOnlyList<float> inputGradient = gradient ?? new float[InputSize];
 
         float[] gradientResult = new float[OutputSize];
-        float[] dataResult = new float[OutputSize];
-
-        bool matrixFlag = 0 <= varIndex && varIndex < InputSize * OutputSize;
-        int outputIndex = varIndex / OutputSize;
-        int inputIndex = varIndex % OutputSize;
-
-        bool biasFlag = InputSize * OutputSize < varIndex && varIndex < (InputSize + 1) * OutputSize;
-        int bOutputIndex = varIndex - InputSize * OutputSize;
-
+        Invoke(value, out valueOut);
+        
         for (int outI = 0; outI < OutputSize; outI++)
         {
-            for (int inI = 0; inI < InputSize; inI++)
+            if(valueOut[outI] == 0) continue;
+            
+            for(int inI = 0; inI < InputSize; inI++)
             {
-                dataResult[outI] += matrix[outI][inI] * value[inI];
-                gradientResult[outI] += matrix[outI][inI] * gradientOrDefault[inI];
+                gradientResult[outI] += matrix[outI][inI] * inputGradient[inI];
             }
-
-            dataResult[outI] += bias[outI];
-
-            float differentiatedMatrixOIPart = matrixFlag && outI == outputIndex ? value[inputIndex] : 0;
-            int differentiatedBias = biasFlag && outI == bOutputIndex ? 1 : 0;
-            gradientResult[outI] += differentiatedMatrixOIPart + differentiatedBias;
-
-            dataResult[outI] = Math.Max(0, dataResult[outI]);
-            gradientResult[outI] = dataResult[outI] < 0 ? 0 : gradientResult[outI];
-
-            //if dataResult[outI] == 0, then we might have a problem, quick check.
-            if (dataResult[outI] == 0) throw new ArgumentException($"dataResult[{outI}] = 0"); //TODO: Remove dataResult == 0 test.
         }
 
-        valueOut = dataResult;
+        //Speed test v1: 
+//      byte matrixFlag = (0 <= varIndex && varIndex < matrixCount).ToByte();
+//      int mOutputIndex = varIndex / OutputSize;
+//      int inputIndex = varIndex % OutputSize;
+//      
+//      byte biasFlag = (matrixCount < varIndex && varIndex < VariableCount()).ToByte();
+//      int bOutputIndex = varIndex - matrixCount;
+//      
+//      int outputIndex = matrixFlag*mOutputIndex + biasFlag*bOutputIndex;
+//      gradientResult[outputIndex] += matrixFlag*value[inputIndex] + biasFlag;
+
+        //Speed test v2
+        if(0 <= varIndex && varIndex < matrixCount)
+        {
+            int outputIndex = varIndex - matrixCount;
+            gradientResult[outputIndex]++;
+        }
+        else if(matrixCount < varIndex && varIndex < VariableCount())
+        {
+            int outputIndex = varIndex / OutputSize;
+            int inputIndex = varIndex % OutputSize;
+            gradientResult[outputIndex] += value[inputIndex];
+        }
+
         gradientOut = gradientResult;
     }
 
@@ -203,4 +210,11 @@ public sealed class AffineAgent : IAgent
 
         return new AffineAgent(matrix, bias);
     }
+}
+
+
+public static class Util
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe byte ToByte(this bool b) => *(byte*)&b;
 }
