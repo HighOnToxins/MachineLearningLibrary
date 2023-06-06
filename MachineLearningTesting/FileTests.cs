@@ -43,8 +43,8 @@ internal class FileTests
 
         string filename = "testSave.bin";
 
-        agent.SaveToFile(path + filename);
-        AgentComposite loadedAgent = AgentComposite.LoadFromFile(path + filename);
+        IAgent.SaveToFile(agent, path + filename);
+        IAgent loadedAgent = IAgent.LoadFromFile(path + filename);
 
         Assert.That(agent.VariableCount(), Is.EqualTo(loadedAgent.VariableCount()));
 

@@ -51,6 +51,8 @@ public sealed class AffineAgent : IAgent
         {
             bias[i] = weights[i, InputSize];
         }
+
+        matrixCount = matrix.Length * matrix[0].Length;
     }
 
     public AffineAgent(float[] variables)
@@ -98,20 +100,21 @@ public sealed class AffineAgent : IAgent
         out IReadOnlyList<float> gradientOut,
         int varIndex = -1)
     {
-        if (gradient is not null && gradient.Count != InputSize)
-            throw new ArgumentException();
-        IReadOnlyList<float> inputGradient = gradient ?? new float[InputSize];
-
-        float[] gradientResult = new float[OutputSize];
         Invoke(value, out valueOut);
-        
-        for (int outI = 0; outI < OutputSize; outI++)
+        float[] gradientResult = new float[OutputSize];
+
+        if(gradient is not null)
         {
-            if(valueOut[outI] == 0) continue;
+            if(gradient.Count != InputSize) throw new ArgumentException();
             
-            for(int inI = 0; inI < InputSize; inI++)
+            for(int outI = 0; outI < OutputSize; outI++)
             {
-                gradientResult[outI] += matrix[outI][inI] * inputGradient[inI];
+                if(valueOut[outI] == 0) continue;
+
+                for(int inI = 0; inI < InputSize; inI++)
+                {
+                    gradientResult[outI] += matrix[outI][inI] * gradient[inI];
+                }
             }
         }
 
@@ -129,14 +132,14 @@ public sealed class AffineAgent : IAgent
         //Speed test v2
         if(0 <= varIndex && varIndex < matrixCount)
         {
-            int outputIndex = varIndex - matrixCount;
-            gradientResult[outputIndex]++;
+            int outputIndex = varIndex / OutputSize;
+            int inputIndex = varIndex % OutputSize;
+            gradientResult[outputIndex] += valueOut[inputIndex];
         }
         else if(matrixCount < varIndex && varIndex < VariableCount())
         {
-            int outputIndex = varIndex / OutputSize;
-            int inputIndex = varIndex % OutputSize;
-            gradientResult[outputIndex] += value[inputIndex];
+            int outputIndex = varIndex - matrixCount;
+            gradientResult[outputIndex]++;
         }
 
         gradientOut = gradientResult;

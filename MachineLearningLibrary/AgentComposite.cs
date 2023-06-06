@@ -10,7 +10,7 @@ public sealed class AgentComposite: IAgent
         this.layers = layers;
     }
 
-    public int VariableCount() //Chache variable count when calculated.
+    public int VariableCount() //TODO: Chache variable count when calculated.
     {
         int sum = 0;
         for(int i = 0; i < layers.Count; i++)
@@ -60,12 +60,6 @@ public sealed class AgentComposite: IAgent
         derivativeResult = tempGradient;
     }
 
-    public void SaveToFile(string path)
-    {
-        using BinaryWriter binWriter = new(File.Create(path));
-        WriteToFile(binWriter);
-    }
-
     public void WriteToFile(BinaryWriter binWriter)
     {
         binWriter.Write(layers.Count);
@@ -83,12 +77,6 @@ public sealed class AgentComposite: IAgent
         }
     }
 
-    public static AgentComposite LoadFromFile(string path)
-    {
-        using BinaryReader binReader = new(File.OpenRead(path));
-        return ReadFromFile(binReader);
-    }
-
     public static AgentComposite ReadFromFile(BinaryReader binReader)
     {
         int layerCount = binReader.ReadInt32();
@@ -99,14 +87,12 @@ public sealed class AgentComposite: IAgent
             int layerType = binReader.ReadInt32();
 
             //TODO: Change to use reflection instead of swtich, for determining layer-type.
-            IAgent layer = layerType switch
+            layers[i] = layerType switch
             {
                 0 => ReadFromFile(binReader),
                 1 => AffineAgent.ReadFromFile(binReader),
                 _ => throw new IOException(),
             };
-
-            layers[i] = layer;
         }
 
         return new AgentComposite(layers);
