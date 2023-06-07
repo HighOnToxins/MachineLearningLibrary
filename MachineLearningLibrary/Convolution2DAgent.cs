@@ -128,7 +128,7 @@ public sealed class Convolution2DAgent: IAgent
                     int count = 0;
 
                     int outOffsetX = offsetX + outX;
-                    int outoffsetY = offsetY + outY; //TODO: Consider incrementing these values rather that computing them.
+                    int outoffsetY = offsetY + outY; 
 
                     for(int kerX = 0; kerX < KernalWidth; kerX++)
                     {
@@ -168,6 +168,45 @@ public sealed class Convolution2DAgent: IAgent
 
     public void WriteToFile(BinaryWriter binWriter)
     {
-        throw new NotImplementedException();
+        binWriter.Write(KernalWidth); 
+        binWriter.Write(KernalHeight);
+
+        binWriter.Write(InputWidth);
+        binWriter.Write(InputHeight);
+
+        binWriter.Write(OutputWidth);
+        binWriter.Write(OutputHeight);
+
+        for(int x = 0; x < KernalWidth; x++)
+        {
+            for(int y = 0; y < KernalHeight; y++)
+            {
+                binWriter.Write(kernal[x][y]);
+            }
+        }
+    }
+
+    public static IAgent ReadFromfile(BinaryReader binReader)
+    {
+        int kernalWidth = binReader.ReadInt32();
+        int kernalHeight = binReader.ReadInt32();
+
+        int inputWidth = binReader.ReadInt32();
+        int inputHeight = binReader.ReadInt32();
+
+        int outputWidth = binReader.ReadInt32();
+        int outputHeight = binReader.ReadInt32();
+
+        float[][] kernal = new float[kernalWidth][];
+        for(int x = 0; x < kernalWidth; x++)
+        {
+            kernal[x] = new float[kernalHeight];
+            for(int y = 0; y < kernalHeight; y++)
+            {
+                kernal[x][y] = binReader.ReadSingle();
+            }
+        }
+
+        return new Convolution2DAgent(kernal, inputWidth, inputHeight, outputWidth, outputHeight);
     }
 }

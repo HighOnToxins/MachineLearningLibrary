@@ -70,6 +70,7 @@ public sealed class AgentComposite: IAgent
             {
                 case AgentComposite: binWriter.Write(0); break;
                 case AffineAgent: binWriter.Write(1); break;
+                case Convolution2DAgent: binWriter.Write(2); break;
                 default:  throw new IOException();
             }
 
@@ -91,6 +92,7 @@ public sealed class AgentComposite: IAgent
             {
                 0 => ReadFromFile(binReader),
                 1 => AffineAgent.ReadFromFile(binReader),
+                2 => Convolution2DAgent.ReadFromFile(binReader),
                 _ => throw new IOException(),
             };
         }

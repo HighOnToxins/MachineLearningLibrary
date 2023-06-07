@@ -16,6 +16,7 @@ public interface IAgent: IDifferentiable<IReadOnlyList<float>, IReadOnlyList<flo
         {
             case AgentComposite: binWriter.Write(0); break;
             case AffineAgent: binWriter.Write(1); break;
+            case Convolution2DAgent: binWriter.Write(2); break;
             default: throw new IOException();
         }
         agent.WriteToFile(binWriter);
@@ -30,6 +31,7 @@ public interface IAgent: IDifferentiable<IReadOnlyList<float>, IReadOnlyList<flo
         {
             0 => AgentComposite.ReadFromFile(binReader),
             1 => AffineAgent.ReadFromFile(binReader),
+            2 => Convolution2DAgent.ReadFromFile(binReader),
             _ => throw new IOException(),
         };
     }
