@@ -186,7 +186,7 @@ public sealed class Convolution2DAgent: IAgent
         }
     }
 
-    public static IAgent ReadFromfile(BinaryReader binReader)
+    public static IAgent ReadFromFile(BinaryReader binReader)
     {
         int kernalWidth = binReader.ReadInt32();
         int kernalHeight = binReader.ReadInt32();

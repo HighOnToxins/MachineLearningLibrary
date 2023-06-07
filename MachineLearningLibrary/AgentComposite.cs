@@ -66,15 +66,7 @@ public sealed class AgentComposite: IAgent
 
         for(int i = 0; i < layers.Count; i++)
         {
-            switch(layers[i])
-            {
-                case AgentComposite: binWriter.Write(0); break;
-                case AffineAgent: binWriter.Write(1); break;
-                case Convolution2DAgent: binWriter.Write(2); break;
-                default:  throw new IOException();
-            }
-
-            layers[i].WriteToFile(binWriter);
+            IAgent.WriteAnyToFile(layers[i], binWriter);
         }
     }
 
@@ -85,16 +77,7 @@ public sealed class AgentComposite: IAgent
 
         for(int i = 0; i < layerCount; i++)
         {
-            int layerType = binReader.ReadInt32();
-
-            //TODO: Change to use reflection instead of swtich, for determining layer-type.
-            layers[i] = layerType switch
-            {
-                0 => ReadFromFile(binReader),
-                1 => AffineAgent.ReadFromFile(binReader),
-                2 => Convolution2DAgent.ReadFromFile(binReader),
-                _ => throw new IOException(),
-            };
+            layers[i] = IAgent.ReadAnyFromFile(binReader);
         }
 
         return new AgentComposite(layers);
