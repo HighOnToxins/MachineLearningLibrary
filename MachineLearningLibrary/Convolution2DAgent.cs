@@ -25,11 +25,42 @@ public sealed class Convolution2DAgent: IAgent
         OutputHeight = outputHeight;
 
         int kernal0length = kernal[0].Length;
-        for(int i = 0; i < kernal.Length; i++)
+        for(int x = 0; x < kernal.Length; x++)
         {
-            if(kernal[i].Length != kernal0length)
+            if(kernal[x].Length != kernal0length)
             {
                 throw new ArgumentException();
+            }
+        }
+
+        variableCount = kernal.Length * kernal0length;
+        inputCount = OutputWidth * OutputHeight;
+
+        offsetX = (InputWidth - OutputWidth - KernalWidth) / 2;
+        offsetY = (InputHeight - OutputHeight - KernalHeight) / 2;
+    }
+
+    public Convolution2DAgent(
+        int kernalWidth, int kernalHeight, 
+        int inputWidth, int inputHeight, 
+        int outputWidth, int outputHeight,
+        int rndRangeMin, int rndRangeMax)
+    {
+        InputWidth = inputWidth;
+        InputHeight = inputHeight;
+        OutputWidth = outputWidth;
+        OutputHeight = outputHeight;
+
+        Random random = new();
+
+        kernal = new float[kernalWidth][];
+        int kernal0length = kernal[0].Length;
+        for(int x = 0; x < kernal.Length; x++)
+        {
+            kernal[x] = new float[kernalHeight];
+            for(int y = 0; y < kernal0length; y++)
+            {
+                kernal[x][y] = random.Next(rndRangeMin, rndRangeMax);
             }
         }
 
