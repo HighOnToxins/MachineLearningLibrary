@@ -32,8 +32,9 @@ public interface IAgent: IDifferentiable<IReadOnlyList<float>, IReadOnlyList<flo
     public static IAgent ReadAnyFromFile(BinaryReader binReader)
     {
         int agentCode = binReader.ReadInt32();
-        Type agentType = IOAgents.First(t => t.GetType().Name.GetHashCode() == agentCode);
-        MethodInfo? method = agentType.GetMethod("ReadFromFile");
+        Type agentType = IOAgents.First(t => t.Name.GetHashCode() == agentCode);
+        MethodInfo? method = agentType.GetMethod("ReadFromFile",
+            BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
 
         if(method is null || method.Invoke(null, new object[] { binReader }) is not IAgent agent)
         {
@@ -47,7 +48,7 @@ public interface IAgent: IDifferentiable<IReadOnlyList<float>, IReadOnlyList<flo
     {
         IOAgents = Assembly.GetExecutingAssembly()
             .GetTypes()
-            .Where(t => t.IsSubclassOf(typeof(IAgent)))
+            .Where(t => t.IsAssignableTo(typeof(IAgent)) && t != typeof(IAgent))
             .ToArray();
     }
 
