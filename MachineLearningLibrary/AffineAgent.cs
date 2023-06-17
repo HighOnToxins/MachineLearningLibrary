@@ -215,10 +215,3 @@ public sealed class AffineAgent : IAgent
         return new AffineAgent(matrix, bias);
     }
 }
-
-
-public static class Util
-{
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe byte ToByte(this bool b) => *(byte*)&b;
-}
